@@ -1,7 +1,8 @@
 from .._C import LocalDataset as C_LocalDataset
 import os, json
+from .base import Dataset
 
-class LocalDataset:
+class LocalDataset(Dataset):
     def __init__(self, dir : str, mode : str, trunk_size : int = 32 * 1024 * 1024, trunks_per_file : int = 4) -> None:
         dir = os.path.abspath(dir)
 
@@ -41,7 +42,7 @@ class LocalDataset:
             return
         self.__ds.flush()
     
-    def write(self, data):
+    def write(self, data : bytes):
         if self.__closed:
             raise RuntimeError("Dataset closed")
         self.__ds.write(data, len(data))
@@ -51,23 +52,23 @@ class LocalDataset:
             raise RuntimeError("Dataset closed")
         return self.__ds.read()
     
-    def seek(self, offset, whence):
+    def seek(self, offset : int, whence : int) -> int:
         if self.__closed:
             raise RuntimeError("Dataset closed")
         self.__ds.seek(offset, whence)
         return self.__ds.tell()
     
-    def pread(self, offset):
+    def pread(self, offset : int) -> bytes:
         if self.__closed:
             raise RuntimeError("Dataset closed")
         return self.__ds.pread(offset)
     
-    def size(self):
+    def size(self) -> int:
         if self.__closed:
             raise RuntimeError("Dataset closed")
         return self.__ds.size()
     
-    def tell(self):
+    def tell(self) -> int:
         if self.__closed:
             raise RuntimeError("Dataset closed")
         return self.__ds.tell()
