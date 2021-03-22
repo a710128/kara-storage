@@ -12,7 +12,7 @@ class LocalDataset(Dataset):
             os.makedirs(dir)
             json.dump({
                 "trunk_size": trunk_size,
-                "trunks_per_file ":  trunks_per_file
+                "trunks_per_file" :  trunks_per_file
             }, open( os.path.join(dir, "meta.json"), "w" ) )
 
         if not os.path.exists( os.path.join(dir, "meta.json") ):
@@ -45,7 +45,7 @@ class LocalDataset(Dataset):
     def write(self, data : bytes):
         if self.__closed:
             raise RuntimeError("Dataset closed")
-        self.__ds.write(data, len(data))
+        self.__ds.write(data)
     
     def read(self):
         if self.__closed:

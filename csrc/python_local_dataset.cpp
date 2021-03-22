@@ -73,8 +73,8 @@ static int LocalDataset_init(LocalDataset *self, PyObject *args, PyObject *kwds)
 
 static PyObject* LocalDataset_write(LocalDataset *self, PyObject *args) {
     const char *data;
-    uint32_t length;
-    PyArg_ParseTuple(args, "yI", &data, &length);
+    Py_ssize_t length;
+    PyArg_ParseTuple(args, "s#", &data, &length);
     try {
         self->dataset->write(DataView(data, length));
     } catch (KaraStorageException e) {

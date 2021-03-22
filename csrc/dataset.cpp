@@ -49,8 +49,7 @@ DataView Dataset::read() {
 
     // need reload index
     if (this->need_reload_index) {
-        this->index->unlink(this->view_index);
-        this->view_index = this->index->link(this->_tell >> INDEX_PER_FILE_POW);
+        this->index->relink(this->_tell >> INDEX_PER_FILE_POW, this->view_index);
         this->need_reload_index = false;
     }
 
@@ -60,8 +59,7 @@ DataView Dataset::read() {
     uint32_t data_offset = low32(data_info);
     if (this->curr_data_trunk != data_trunk) {
         // data starts from new trunk
-        this->data->unlink(this->view_data);
-        this->view_data = this->data->link(data_trunk);
+        this->data->relink(data_trunk, this->view_data);
         this->curr_data_trunk = data_trunk;
         this->curr_data_offset = 0;
     }
@@ -74,8 +72,7 @@ DataView Dataset::read() {
         // index in new trunk
         if (this->_tell >= this->_total) this->need_reload_index = true;
         else {
-            this->index->unlink(this->view_index);
-            this->view_index = this->index->link(this->_tell >> INDEX_PER_FILE_POW);
+            this->index->relink(this->_tell >> INDEX_PER_FILE_POW, this->view_index);
         }
     }
     this->curr_data_trunk = data_trunk;
@@ -110,8 +107,7 @@ void Dataset::seek(uint32_t offset, uint32_t whence) {
     if (nw_index_trunk != curr_index_trunk || this->need_reload_index) {
         // switch index view
         if (has_new_index_trunk) {
-            this->index->unlink(this->view_index);
-            this->view_index = this->index->link(nw_index_trunk);
+            this->index->relink(nw_index_trunk, this->view_index);
             this->need_reload_index = false;
         }
     }
@@ -147,8 +143,7 @@ void Dataset::seek(uint32_t offset, uint32_t whence) {
         }
     }
     if (this->curr_data_trunk != old_data_trunk) {
-        this->data->unlink(this->view_data);
-        this->view_data = this->data->link(this->curr_data_trunk);
+        this->data->relink(this->curr_data_trunk, this->view_data);
     }
     this->need_reload_index = !has_new_index_trunk;
     this->_tell = nwtell;

@@ -1,6 +1,6 @@
 
 from typing import Any, Generator, Union
-import urllib
+from urllib.parse import urlparse
 import os
 from ..dataset import Dataset
 from ..serialization import Serializer, JSONSerializer
@@ -47,7 +47,7 @@ class RowDataset(Dataset):
     def __len__(self) -> int:
         return self.size()
     
-    def __iter__(self) -> Generator[Any]:
+    def __iter__(self) -> Generator[Any, None, None]:
         while True:
             v = self.read()
             if v is None:
@@ -57,12 +57,13 @@ class RowDataset(Dataset):
     def __getitem__(self, key : int) -> Any:
         if not isinstance(key, int):
             raise TypeError("Dataset index must be int")
+        return self.pread(key)
         
 
 
 class RowStorage:
     def __init__(self, uri : str) -> None:
-        uri = urllib.parse.urlparse(uri)
+        uri = urlparse(uri)
         if uri.scheme == "file":
             path = ""
             if uri.netloc == "":
