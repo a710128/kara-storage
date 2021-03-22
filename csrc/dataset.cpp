@@ -6,10 +6,11 @@
 #include "utils.h"
 
 
-Dataset::Dataset(TrunkController *index, TrunkController *data, bool writable, int max_trunk_size, int trunks_per_file) {
+Dataset::Dataset(TrunkController *index, TrunkController *data, bool writable) {
     this->writable = writable;
 
     this->index = index;
+    this->need_reload_index = false;
     this->data = data;
    
     int num_trunks = this->index->get_num_trunks();
@@ -18,6 +19,7 @@ Dataset::Dataset(TrunkController *index, TrunkController *data, bool writable, i
 
     this->curr_data_trunk = 0;
     this->curr_data_offset = 0;
+    this->_tell = 0;
     this->view_data = this->data->link(0);
     this->view_index = this->index->link(0);
 }
@@ -42,6 +44,17 @@ void Dataset::flush() {
 
 
 DataView Dataset::read() {
+    // at the end
+    if (this->_tell >= this->_total) return DataView(NULL, 0);
+
+    // need reload index
+    if (this->need_reload_index) {
+        this->index->unlink(this->view_index);
+        this->view_index = this->index->link(this->_tell >> INDEX_PER_FILE_POW);
+        this->need_reload_index = false;
+    }
+
+    // otherwise
     uint64_t data_info = *((uint64_t *)(this->view_index.data) + (this->_tell & IN_TRUNK_INDEX_MASK));
     uint32_t data_trunk = high32(data_info);
     uint32_t data_offset = low32(data_info);
@@ -59,9 +72,14 @@ DataView Dataset::read() {
     this->_tell ++;
     if ((this->_tell & IN_TRUNK_INDEX_MASK) == 0) {
         // index in new trunk
-        this->index->unlink(this->view_index);
-        this->view_index = this->index->link(this->_tell >> INDEX_PER_FILE_POW);
+        if (this->_tell >= this->_total) this->need_reload_index = true;
+        else {
+            this->index->unlink(this->view_index);
+            this->view_index = this->index->link(this->_tell >> INDEX_PER_FILE_POW);
+        }
     }
+    this->curr_data_trunk = data_trunk;
+    this->curr_data_offset = data_offset;
 
     return DataView((char*)(this->view_data.data) + start, length);
 }
@@ -78,27 +96,38 @@ void Dataset::seek(uint32_t offset, uint32_t whence) {
     else if (whence == 2) {
         nwtell = this->_total - offset;
     }
+    if (nwtell > this->_total) nwtell = this->_total;
 
-    int curr_index_trunk = this->_tell >> INDEX_PER_FILE_POW;
-    int nw_index_trunk = nwtell >> INDEX_PER_FILE_POW;
+
+    uint32_t curr_index_trunk = this->_tell >> INDEX_PER_FILE_POW;
+    uint16_t nw_index_trunk = nwtell >> INDEX_PER_FILE_POW;
     uint32_t old_data_trunk = this->curr_data_trunk;
 
-    if (nw_index_trunk != curr_index_trunk) {
+    bool has_new_index_trunk = nw_index_trunk < this->index->get_num_trunks();
+    bool has_new_index = nwtell >= this->_total;
+
+    // load next index trunk
+    if (nw_index_trunk != curr_index_trunk || this->need_reload_index) {
         // switch index view
-        this->index->unlink(this->view_index);
-        this->view_index = this->index->link(nw_index_trunk);
+        if (has_new_index_trunk) {
+            this->index->unlink(this->view_index);
+            this->view_index = this->index->link(nw_index_trunk);
+            this->need_reload_index = false;
+        }
     }
+
+    // read prev index trunk
     if (nwtell > 0) {
         // prev index block
         int nw_index_prev_trunk = (nwtell - 1) / INDEX_PER_FILE;
 
         uint64_t prev_info;
-        if (nw_index_prev_trunk != nw_index_trunk) {
-            // not in the same trunk
-            this->index->pread(&prev_info, nw_index_prev_trunk, ((nwtell - 1) & IN_TRUNK_INDEX_MASK) << 3, sizeof(prev_info));
-        } else {
+        if (nw_index_prev_trunk == nw_index_trunk && has_new_index_trunk) {
             // in the same trunk
             prev_info = *((uint64_t *)(this->view_index.data) + ((nwtell - 1) & IN_TRUNK_INDEX_MASK));
+        } else {
+            // not in the same trunk
+            this->index->pread(&prev_info, nw_index_prev_trunk, ((nwtell - 1) & IN_TRUNK_INDEX_MASK) << 3, sizeof(prev_info));
         }
         this->curr_data_trunk = high32(prev_info);
         this->curr_data_offset = low32(prev_info);
@@ -107,16 +136,21 @@ void Dataset::seek(uint32_t offset, uint32_t whence) {
         this->curr_data_offset = 0;
     }
 
-    uint64_t next_data_trunk = high32(*((uint64_t *)(this->view_index.data) + (nwtell & IN_TRUNK_INDEX_MASK)));
-    
-    if (this->curr_data_trunk != next_data_trunk) {
-        this->curr_data_trunk = next_data_trunk;
-        this->curr_data_offset = 0;
+    if (has_new_index) {
+        // index read ahead
+        // update next data trunk id if current data and next data not in the same trunk
+        uint64_t next_data_trunk = high32(*((uint64_t *)(this->view_index.data) + (nwtell & IN_TRUNK_INDEX_MASK)));
+        
+        if (this->curr_data_trunk != next_data_trunk) {
+            this->curr_data_trunk = next_data_trunk;
+            this->curr_data_offset = 0;
+        }
     }
     if (this->curr_data_trunk != old_data_trunk) {
         this->data->unlink(this->view_data);
         this->view_data = this->data->link(this->curr_data_trunk);
     }
+    this->need_reload_index = !has_new_index_trunk;
     this->_tell = nwtell;
 }
 
@@ -139,7 +173,7 @@ DataView Dataset::pread(uint32_t offset) {
     uint32_t current_index_trunk = this->_tell >> INDEX_PER_FILE_POW;
 
     if (trunk == trunk_prev) {
-        if (trunk == current_index_trunk) {
+        if (trunk == current_index_trunk && !this->need_reload_index) {
             // no pread needed
             pos[0] = *((uint64_t*)(this->view_index.data) + intrunk_off_prev);
             pos[1] = *((uint64_t*)(this->view_index.data) + intrunk_off);
@@ -148,13 +182,13 @@ DataView Dataset::pread(uint32_t offset) {
         }
     } else {
         // two index not in the same trunk
-        if (trunk_prev == current_index_trunk) {
+        if (trunk_prev == current_index_trunk && !this->need_reload_index) {
             pos[0] = *((uint64_t*)(this->view_index.data) + intrunk_off_prev);
         } else {
             this->index->pread(pos, trunk_prev, intrunk_off_prev << 3, sizeof(uint64_t));
         }
 
-        if (trunk_prev == current_index_trunk) {
+        if (trunk_prev == current_index_trunk && !this->need_reload_index) {
             pos[1] = *((uint64_t*)(this->view_index.data) + intrunk_off);
         } else {
             this->index->pread(pos + 1, trunk_prev, intrunk_off << 3, sizeof(uint64_t));

@@ -1,1 +1,1 @@
-from . import _C
+from .local import LocalDataset

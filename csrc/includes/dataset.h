@@ -30,7 +30,7 @@ class Dataset {
 private:
     TrunkController *index;
     TrunkController *data;
-    bool writable;
+    bool writable, need_reload_index;
 
     TrunkView view_data;
     TrunkView view_index;
@@ -38,7 +38,7 @@ private:
     uint32_t _tell, _total;
     uint32_t curr_data_trunk, curr_data_offset;
 public:
-    Dataset(TrunkController *index, TrunkController *data, bool writable = false, int max_trunk_size = 32 * 1024 * 1024, int trunks_per_file = 4);
+    Dataset(TrunkController *index, TrunkController *data, bool writable = false);
     ~Dataset();
     void write(const DataView&);
     void flush();

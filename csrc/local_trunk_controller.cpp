@@ -22,7 +22,7 @@ LocalTrunkController::LocalTrunkController(int base_dir_fd, bool writable, uint3
     
     if (faccessat(this->base_dir_fd, "meta", F_OK, 0) == -1) {
         // init dataset
-        this->meta_fd = openat(this->base_dir_fd, "meta", (this->writable ? O_RDWR : O_RDONLY) | O_CREAT);
+        this->meta_fd = openat(this->base_dir_fd, "meta", (this->writable ? O_RDWR : O_RDONLY) | O_CREAT, 0755);
         if (this->meta_fd == -1) throw KaraStorageException("Failed to intialize database");
 
         this->last_file_size = 0;
@@ -52,16 +52,18 @@ LocalTrunkController::LocalTrunkController(int base_dir_fd, bool writable, uint3
     
     int num_files = 0;
     while (true) {
-        sprintf(tmp_buffer, "%d.block", num_files ++);
+        sprintf(tmp_buffer, "%d.block", num_files);
 
         if (faccessat(this->base_dir_fd, tmp_buffer, F_OK, 0) == -1) break;
+        num_files ++;
     }
     if (num_files <= 0) throw KaraStorageException("Broken dataset");
     this->num_trunks = (num_files - 1) * this->trunks_per_file + ( this->last_file_size >> this->trunk_size_pow ) + 1;
+    printf("Num files: %d\tNum trunks %d\tlast_file_size: %d\ttrunk_size_pow: %d\n", num_files, this->num_trunks, this->last_file_size, this->trunk_size_pow);
     
     if (this->writable) {
         this->current_fd = this->open_file((this->num_trunks - 1) / this->trunks_per_file, true);
-        this->write_mem_map = mmap(NULL, this->max_trunk_size, PROT_WRITE, MAP_SHARED | MAP_LOCKED, this->current_fd,  ((this->num_trunks - 1) % this->trunks_per_file) << this->trunk_size_pow);
+        this->write_mem_map = mmap(NULL, this->max_trunk_size, PROT_WRITE, MAP_SHARED, this->current_fd,  ((this->num_trunks - 1) % this->trunks_per_file) << this->trunk_size_pow);
         if (this->write_mem_map == MAP_FAILED) throw KaraStorageException("Failed to map data");
 
         this->bytes_since_last_flush = 0;
@@ -117,7 +119,7 @@ int LocalTrunkController::open_file(uint32_t file_id, bool writable) {
     char tmp_buffer[24];
     sprintf(tmp_buffer, "%d.block", file_id);
     int fd = openat(this->base_dir_fd, tmp_buffer, writable ? O_RDWR : O_RDONLY );
-    if (fd == -1) throw KaraStorageException("Failed to open local storage file");
+    if (fd == -1) throw KaraStorageException("Failed to open local storage file id: %d (errno: %d)", file_id, errno);
     return fd;
 }
 
@@ -149,7 +151,7 @@ uint64_t LocalTrunkController::append(const void* data, const uint32_t length) {
             this->current_fd = this->init_file(this->num_trunks / this->trunks_per_file);
         }
 
-        this->write_mem_map = mmap(NULL, this->max_trunk_size, PROT_WRITE, MAP_SHARED | MAP_LOCKED, this->current_fd,  (this->num_trunks % this->trunks_per_file) << this->trunk_size_pow);
+        this->write_mem_map = mmap(NULL, this->max_trunk_size, PROT_WRITE, MAP_SHARED, this->current_fd,  (this->num_trunks % this->trunks_per_file) << this->trunk_size_pow);
         if (this->write_mem_map == MAP_FAILED) throw KaraStorageException("Failed to map data");
         this->last_file_size = (this->num_trunks % this->trunks_per_file) << this->trunk_size_pow;
         this->num_trunks ++;
@@ -159,18 +161,48 @@ uint64_t LocalTrunkController::append(const void* data, const uint32_t length) {
     memcpy((char*)this->write_mem_map + last_position, data, length);
     this->last_file_size += length;
     last_position += length;
+
+    // exactly at the end
+    if (last_position == this->max_trunk_size) {
+        // new page here
+        // create new trunk here
+        this->flush();
+
+        // unmap old file
+        if (munmap(this->write_mem_map, this->max_trunk_size) == -1) {
+            throw KaraStorageException("Failed to unmap old data");
+        }
+
+        if (this->num_trunks % this->trunks_per_file == 0) {
+            // create new file here
+
+            // close old files
+            close(this->current_fd);
+
+            // init new file
+            this->current_fd = this->init_file(this->num_trunks / this->trunks_per_file);
+        }
+
+        this->write_mem_map = mmap(NULL, this->max_trunk_size, PROT_WRITE, MAP_SHARED, this->current_fd,  (this->num_trunks % this->trunks_per_file) << this->trunk_size_pow);
+        if (this->write_mem_map == MAP_FAILED) throw KaraStorageException("Failed to map data");
+        this->last_file_size = (this->num_trunks % this->trunks_per_file) << this->trunk_size_pow;
+        this->num_trunks ++;
+        this->write_last_file_size();
+        last_position = 0;
+    }
     this->bytes_since_last_flush += length;
     if (this->bytes_since_last_flush >= FLUSH_INTERVAL) this->flush();
     return ((uint64_t(this->num_trunks - 1)) << uint64_t(32)) | uint64_t(last_position);
 }
 
 TrunkView LocalTrunkController::link(const uint32_t trunk_id) {
+    if (trunk_id >= this->num_trunks) throw KaraStorageException("Trunk id out of range");
     if ( trunk_id + 1 == this->num_trunks && this->bytes_since_last_flush > 0) {
         this->flush();
     }
     int fd = this->open_file( trunk_id / this->trunks_per_file );
-    void* mem = mmap(NULL, this->max_trunk_size, PROT_READ, MAP_SHARED | MAP_LOCKED | MAP_POPULATE, fd, (trunk_id % this->trunks_per_file) << this->trunk_size_pow );
-    if (mem == MAP_FAILED) throw KaraStorageException("Failed to map local storage data");
+    void* mem = mmap(NULL, this->max_trunk_size, PROT_READ, MAP_SHARED | MAP_POPULATE, fd, (trunk_id % this->trunks_per_file) << this->trunk_size_pow );
+    if (mem == MAP_FAILED) throw KaraStorageException("Failed to map local storage data (errno: %d)", errno);
     return TrunkView(fd, mem, this->max_trunk_size);
 }
 

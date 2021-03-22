@@ -18,7 +18,6 @@ typedef struct {
 } LocalDataset;
 
 static void LocalDataset_dealloc(LocalDataset *self) {
-    PyObject_GC_UnTrack(self);
     delete self->dataset;
     delete self->data;
     delete self->index;
@@ -61,8 +60,14 @@ static int LocalDataset_init(LocalDataset *self, PyObject *args, PyObject *kwds)
     self->index_fd = dirfd(self->index_dir);
     self->data_fd = dirfd(self->data_dir);
 
-    self->data = new LocalTrunkController(self->data_fd, !!writable, trunk_size, trunks_per_file);
-    self->index = new LocalTrunkController(self->index_fd, !!writable, INDEX_FILE_SIZE, 1);
+    try {
+        self->data = new LocalTrunkController(self->data_fd, !!writable, trunk_size, trunks_per_file);
+        self->index = new LocalTrunkController(self->index_fd, !!writable, INDEX_FILE_SIZE, 1);
+        self->dataset = new Dataset(self->index, self->data, !!writable);
+    } catch( KaraStorageException e) {
+        PyErr_SetString(PyExc_RuntimeError, e.msg.c_str());
+        return 1;
+    }
     return 0;
 }
 
