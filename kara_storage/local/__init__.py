@@ -1,22 +1,30 @@
 from .._C import LocalDataset as C_LocalDataset
-import os
+import os, json
 
 class LocalDataset:
-    DEFAULT_TRUNK_SIZE = 32 * 1024 * 1024
-    DEFAULT_TRUNKS_PER_FILE = 4
-    def __init__(self, dir : str, mode : str) -> None:
+    def __init__(self, dir : str, mode : str, trunk_size : int = 32 * 1024 * 1024, trunks_per_file : int = 4) -> None:
         dir = os.path.abspath(dir)
 
         if not os.path.exists(dir):
+            if "w" not in mode:
+                raise ValueError("Dataset not exists!")
             os.makedirs(dir)
+            json.dump({
+                "trunk_size": trunk_size,
+                "trunks_per_file ":  trunks_per_file
+            }, open( os.path.join(dir, "meta.json"), "w" ) )
 
+        if not os.path.exists( os.path.join(dir, "meta.json") ):
+            raise ValueError("Broken dataset: missing meta.json")
+            
+        self.__config = json.load(open( os.path.join(dir, "meta.json"), "r" ))
         data_dir = os.path.join(dir, "data")
         index_dir = os.path.join(dir, "index")
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
         if not os.path.exists(index_dir):
             os.mkdir(index_dir)
-        self.__ds = C_LocalDataset(dir, "w" in mode, LocalDataset.DEFAULT_TRUNK_SIZE, LocalDataset.DEFAULT_TRUNKS_PER_FILE)
+        self.__ds = C_LocalDataset(dir, "w" in mode, self.__config["trunk_size"], self.__config["trunks_per_file"])
         self.__closed = False
     
     @property
