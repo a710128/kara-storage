@@ -47,7 +47,7 @@ class ShuffleDatasetWrapper(data.IterableDataset):
             
              # random swap
             for i in range(fetch_size):
-                v = self.__g.randint(0, len(buffer) - 1)
+                v = int(self.__g.random() * len(buffer))
                 buffer[i], buffer[v] = buffer[v], buffer[i]
             for i in range(fetch_size):
                 yield buffer[i]
