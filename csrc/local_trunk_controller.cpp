@@ -114,7 +114,11 @@ int LocalTrunkController::init_file(uint32_t file_id) {
     sprintf(tmp_buffer, "%d.block", file_id);
     int fd = openat(this->base_dir_fd, tmp_buffer, O_RDWR | O_CREAT, 0755);
     if (fd == -1) throw KaraStorageException("Failed to create local storage file");
-    posix_fallocate(fd, 0, this->max_trunk_size * this->trunks_per_file);
+#ifdef __linux__
+    posix_fallocate(fd, 0, this->max_file_size);
+#else
+    fallocate(fd, 0, 0, this->max_file_size);
+#endif
     return fd;
 }
 
@@ -266,7 +270,7 @@ void LocalTrunkController::quick_flush() {
         throw KaraStorageException("Failed to flush data");
     }
     */
-    write(this->current_fd, this->buffer, this->bytes_since_last_flush);
+    if(write(this->current_fd, this->buffer, this->bytes_since_last_flush) == -1) throw KaraStorageException("Failed to flush write buffer");
     this->bytes_since_last_flush = 0;
 }
 
@@ -278,7 +282,7 @@ void LocalTrunkController::pread(void* dest, uint32_t trunk_id, uint32_t offset,
     int fd = this->open_file( trunk_id / this->trunks_per_file );
     offset += (trunk_id % this->trunks_per_file) << this->trunk_size_pow;
     lseek(fd, offset, SEEK_SET);
-    read(fd, dest, length);
+    if (read(fd, dest, length) == -1) throw KaraStorageException("Failed to read data in trunk %d", trunk_id);
     close(fd);
 }
 
