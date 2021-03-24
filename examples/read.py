@@ -21,7 +21,8 @@ def sequential_read(ds):
 
     idx = []
     for v in tqdm(ds):
-        idx.append(v["index"])
+        if len(idx) <= 10:
+            idx.append(v["index"])
     print(idx[:10])
 
 def shuffle_read(ds):
@@ -31,7 +32,8 @@ def shuffle_read(ds):
 
     idx = []
     for v in tqdm(ds):
-        idx.append(v["index"])
+        if len(idx) <= 10:
+            idx.append(v["index"])
     print(idx[:10])
 
 def seek_test(ds):
@@ -50,8 +52,8 @@ def main():
     storage = kara_storage.RowStorage("file://kara_data")
     ds = storage.open("test", "a/b/c", "r")
 
-    # random_read(ds)
-    # sequential_read(ds)
+    random_read(ds)
+    sequential_read(ds)
     shuffle_read(ds)
     # seek_test(ds)
 

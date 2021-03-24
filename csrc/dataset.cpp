@@ -88,7 +88,7 @@ void Dataset::seek(uint32_t offset, uint32_t whence) {
         nwtell = offset;
     }
     else if (whence == 1) {
-        nwtell = this->_tell;
+        nwtell = this->_tell + offset;
     }
     else if (whence == 2) {
         nwtell = this->_total - offset;

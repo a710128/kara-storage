@@ -1,5 +1,6 @@
 #include "dataset.h"
-#include "local_trunk_controller.h"
+#include "trunk_controller.h"
+#include "storage/local_storage.h"
 #include "exceptions.h"
 #include <dirent.h>
 #include <Python.h>
@@ -9,8 +10,10 @@
 typedef struct {
     PyObject_HEAD // no semicolon
     Dataset *dataset;
-    LocalTrunkController *index;
-    LocalTrunkController *data;
+    TrunkController *index;
+    TrunkController *data;
+    LocalStorage *index_storage;
+    LocalStorage *data_storage;
     int index_fd, data_fd;
     DIR* index_dir;
     DIR* data_dir;
@@ -21,6 +24,8 @@ static void LocalDataset_dealloc(LocalDataset *self) {
     delete self->dataset;
     delete self->data;
     delete self->index;
+    delete self->data_storage;
+    delete self->index_storage;
     close(self->index_fd);
     close(self->data_fd);
     closedir(self->index_dir);
@@ -61,8 +66,10 @@ static int LocalDataset_init(LocalDataset *self, PyObject *args, PyObject *kwds)
     self->data_fd = dirfd(self->data_dir);
 
     try {
-        self->data = new LocalTrunkController(self->data_fd, !!writable, trunk_size, trunks_per_file);
-        self->index = new LocalTrunkController(self->index_fd, !!writable, INDEX_FILE_SIZE, 1);
+        self->data_storage = new LocalStorage(self->data_fd, trunk_size, trunks_per_file);
+        self->index_storage = new LocalStorage(self->index_fd, INDEX_FILE_SIZE, 1);
+        self->data = new TrunkController( self->data_storage );
+        self->index = new TrunkController( self->index_storage );
         self->dataset = new Dataset(self->index, self->data, !!writable);
     } catch( KaraStorageException e) {
         PyErr_SetString(PyExc_RuntimeError, e.msg.c_str());

@@ -1,12 +1,20 @@
 #pragma once
 
+struct TrunkLinkInfo {
+    uint32_t trunk_id;
+    uint32_t ref;
+    uint8_t *data;
+    TrunkLinkInfo *next;
+};
+
+
 class TrunkView {
 public:
-    int fd;
     uint32_t trunk_id;
-    void* data;
+    uint8_t* data;
     uint32_t length;
-    TrunkView(int fd, uint32_t trunk_id, void* data, uint32_t length) : 
-        fd(fd), trunk_id(trunk_id), data(data), length(length) {}
-    TrunkView() : fd(0), trunk_id(0), data(nullptr), length(0) {}
+    TrunkLinkInfo *link_info;
+    TrunkView(uint32_t trunk_id, uint8_t* data, uint32_t length, TrunkLinkInfo *info) : 
+        trunk_id(trunk_id), data(data), length(length), link_info(info) {}
+    TrunkView() : trunk_id(0), data(nullptr), length(0), link_info(NULL) {}
 };
