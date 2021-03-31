@@ -62,7 +62,7 @@ class RowDataset:
 
 
 class RowStorage:
-    def __init__(self, uri : str) -> None:
+    def __init__(self, uri : str, **kwargs) -> None:
         uri = urlparse(uri)
         if uri.scheme == "file":
             path = ""
@@ -71,7 +71,7 @@ class RowStorage:
             else:
                 path = os.path.join( os.path.abspath(uri.netloc), uri.path)
             from .local import LocalRowStorage
-            self.__storage = LocalRowStorage(path)
+            self.__storage = LocalRowStorage(path, **kwargs)
         else:
             raise ValueError("Proto %s not supported" % uri.scheme)
     

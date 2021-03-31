@@ -1,7 +1,8 @@
 import io
-from typing import Optional
+from typing import  Optional
+from .base import FileController
 
-class FileController(io.RawIOBase):
+class OSSFileController(FileController):
     def __init__(self) -> None:
         pass
     
