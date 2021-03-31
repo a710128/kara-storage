@@ -5,7 +5,7 @@ import os
 from ..dataset import Dataset
 from ..serialization import Serializer, JSONSerializer
 
-class RowDataset(Dataset):
+class RowDataset:
     def __init__(self, ds : Dataset, serializer : Serializer):
         self.__ds = ds
         self.__serializer = serializer
