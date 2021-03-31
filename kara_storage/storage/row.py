@@ -62,8 +62,8 @@ class RowDataset:
 
 
 class RowStorage:
-    def __init__(self, uri : str, **kwargs) -> None:
-        uri = urlparse(uri)
+    def __init__(self, url : str, **kwargs) -> None:
+        uri = urlparse(url)
         if uri.scheme == "file":
             path = ""
             if uri.netloc == "":
@@ -72,8 +72,10 @@ class RowStorage:
                 path = os.path.join( os.path.abspath(uri.netloc), uri.path)
             from .local import LocalRowStorage
             self.__storage = LocalRowStorage(path, **kwargs)
-        else:
-            raise ValueError("Proto %s not supported" % uri.scheme)
+        elif uri.scheme == "oss":
+            from .oss import OSSRowStorage
+            self.__storage = OSSRowStorage(uri.path, "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            
     
     def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:
         version = "%s" % version
