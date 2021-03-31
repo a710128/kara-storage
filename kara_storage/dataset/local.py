@@ -1,4 +1,3 @@
-from kara_storage.file_controller import base
 from .base import Dataset
 from ..file_controller import LocalFileController
 import os

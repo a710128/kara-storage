@@ -1,4 +1,3 @@
-from _typeshed import WriteableBuffer, ReadableBuffer
 import os, io
 from typing import Optional
 from .base import FileController
@@ -25,7 +24,7 @@ class LocalFileController(FileController):
         self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % 0), "rb")
         self.write_fd = open(os.path.join( self.base_dir, "%d.blk" % (self.num_trunks - 1) ), "ab")
 
-    def readinto(self, __buffer: WriteableBuffer) -> Optional[int]:
+    def readinto(self, __buffer) -> Optional[int]:
         lw = self.read_fd.readinto(__buffer)
         if lw is None:
             return None
@@ -37,7 +36,7 @@ class LocalFileController(FileController):
                 self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % nx_trunk), "rb")
         return lw
     
-    def write(self, __b: ReadableBuffer) -> Optional[int]:
+    def write(self, __b) -> Optional[int]:
         wrt_len = min( len(__b), self.max_file_size - self.__write_in_file_size )
         self.write_fd.write( __b[:wrt_len] )
         

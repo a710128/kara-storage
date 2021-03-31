@@ -1,4 +1,3 @@
-from _typeshed import WriteableBuffer, ReadableBuffer
 import io
 from typing import Union, Optional
 
@@ -13,10 +12,10 @@ class FileController(io.RawIOBase):
     def seekable(self) -> bool:
         return True
     
-    def readinto(self, __buffer: WriteableBuffer) -> Optional[int]:
+    def readinto(self, __buffer) -> Optional[int]:
         raise NotImplementedError
     
-    def write(self, __b: ReadableBuffer) -> Optional[int]:
+    def write(self, __b) -> Optional[int]:
         raise NotImplementedError
     
     def seek(self, __offset: int, __whence: int) -> int:
