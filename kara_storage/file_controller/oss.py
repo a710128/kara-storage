@@ -43,38 +43,41 @@ class OSSFileController(FileController):
             
         return len(v)
     
-    def write(self, __b) -> Optional[int]:
-        wrt_len = min( len(__b), self.max_file_size - self.__wrin_file_length )
-        self.bucket.append_object(self.prefix + "%d.blk" % (self.num_trunks - 1), self.__wrin_file_length, __b[:wrt_len])
+    def write(self, data : memoryview) -> Optional[int]:
+        wrt_len = min( len(data), self.max_file_size - self.__wrin_file_length )
+        self.bucket.append_object(self.prefix + "%d.blk" % (self.num_trunks - 1), self.__wrin_file_length, data[:wrt_len].tobytes())
 
         self.__size += wrt_len
         self.__wrin_file_length += wrt_len
         if self.__wrin_file_length == self.max_file_size:
             self.num_trunks += 1
-            self.__wrin_file_length
+            self.__wrin_file_length = 0
         return wrt_len
     
     def seek(self, __offset: int, __whence: int) -> int:
         nw_pos = __offset
         if __whence == io.SEEK_CUR:
-            nw_pos = self.read_pos + __offset
+            nw_pos = self.__tell + __offset
         elif __whence == io.SEEK_END:
             nw_pos = self.__size - __offset
         if nw_pos < 0:
             nw_pos = 0
         if nw_pos > self.__size:
             nw_pos = self.__size
-        
         nx_trunk =  nw_pos // self.max_file_size
         self.read_fd.close()
-        self.read_fd = self.bucket.get_object(self.prefix + "%d.blk" % nx_trunk, (nw_pos % self.max_file_size, self.max_file_size))
+        self.read_fd = self.bucket.get_object(
+            self.prefix + "%d.blk" % nx_trunk, 
+            byte_range=(nw_pos % self.max_file_size, self.max_file_size - 1),
+            headers = {'x-oss-range-behavior':'standard'}
+        )
         self.__tell = nw_pos
         return self.__tell
     
     @property
     def closed(self):
         return self.__closed
-    @property
+    
     def tell(self) -> int:
         return self.__tell
 
@@ -98,7 +101,7 @@ class OSSFileController(FileController):
         while rest_length > 0:
             st = (offset + read_pos) % self.max_file_size
             ed = min(st + rest_length, self.max_file_size)
-            v = self.bucket.get_object(self.prefix + "%d.blk" % trunk_id, byte_range=(st, ed))
+            v = self.bucket.get_object(self.prefix + "%d.blk" % trunk_id, byte_range=(st, ed - 1))
 
             read_pos += ed - st
             rest_length -= ed - st

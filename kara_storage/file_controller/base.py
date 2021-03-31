@@ -24,9 +24,10 @@ class FileController(io.RawIOBase):
     @property
     def closed(self):
         raise NotImplementedError
-    @property
+
     def tell(self) -> int:
         raise NotImplementedError
+    
     def close(self) -> None:
         raise NotImplementedError
     

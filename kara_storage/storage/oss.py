@@ -14,7 +14,7 @@ class OSSRowStorage:
         
     
     def open(self, namespace, key, mode, version, **kwargs) -> Dataset:
-        dataset_meta = "/row/%s/%s/meta.json" % (namespace, key)
+        dataset_meta = "row/%s/%s/meta.json" % (namespace, key)
         if not self.bucket.object_exists(dataset_meta):
             if "w" not in mode:
                 raise ValueError("Dataset not exists")
@@ -39,4 +39,4 @@ class OSSRowStorage:
             if version not in config["versions"]:
                 raise ValueError("Dataset version `%s` not found in dataset `%s`" % (version, key))
 
-        return OSSDataset( "/row/%s/%s/" % (namespace, key), self.bucket, **kwargs )
+        return OSSDataset( "row/%s/%s/" % (namespace, key), self.bucket, **kwargs )

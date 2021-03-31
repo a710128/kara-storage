@@ -75,7 +75,6 @@ class LocalFileController(FileController):
     def flush(self):
         self.write_fd.flush()
     
-    @property
     def tell(self) -> int:
         return self.read_pos
 

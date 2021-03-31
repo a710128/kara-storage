@@ -46,7 +46,7 @@ class Dataset:
         self.__data_writer.write(data)
         self.__real_data_size += len(data)
         self.__size += 1
-        self.__index_controller.write( struct.pack("Q", self.__real_data_size) )
+        self.__index_writer.write( struct.pack("Q", self.__real_data_size) )
 
     
     def read(self) -> bytes:

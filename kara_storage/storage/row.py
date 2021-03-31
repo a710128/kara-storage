@@ -74,7 +74,7 @@ class RowStorage:
             self.__storage = LocalRowStorage(path, **kwargs)
         elif uri.scheme == "oss":
             from .oss import OSSRowStorage
-            self.__storage = OSSRowStorage(uri.path, "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            self.__storage = OSSRowStorage(uri.path[1:], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
             
     
     def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:

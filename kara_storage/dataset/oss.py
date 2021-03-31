@@ -2,7 +2,7 @@ from .base import Dataset
 from ..file_controller import OSSFileController
 
 class OSSDataset(Dataset):
-    def __init__(self,  prefix : str, bucket, buffer_size = 128 * 1024, **kwargs) -> None:
+    def __init__(self,  prefix : str, bucket, buffer_size = 1 * 1024 * 1024, **kwargs) -> None:
         if not prefix.endswith("/"):
             prefix = prefix + "/"
         
