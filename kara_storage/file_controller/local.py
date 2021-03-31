@@ -14,15 +14,20 @@ class LocalFileController(FileController):
         last_fs = max_file_size
         while os.path.exists(os.path.join( self.base_dir, "%d.blk" % self.num_trunks)):
             fs = os.stat(os.path.join( self.base_dir, "%d.blk" % self.num_trunks))
-            self.__size += fs
+            self.__size += fs.st_size
             if last_fs != max_file_size:
-                raise RuntimeError("Broken trunk %d (size: %d)" % (self.num_trunks, fs))
-            last_fs = fs
+                raise RuntimeError("Broken trunk %d (size: %d)" % (self.num_trunks - 1, last_fs))
+            last_fs = fs.st_size
             self.num_trunks += 1
 
+        if self.num_trunks == 0:
+            self.num_trunks += 1
+            last_fs = 0
         self.__write_in_file_size = last_fs
-        self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % 0), "rb")
         self.write_fd = open(os.path.join( self.base_dir, "%d.blk" % (self.num_trunks - 1) ), "ab")
+        self.write_fd.flush()
+        self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % 0), "rb")
+        
 
     def readinto(self, __buffer) -> Optional[int]:
         lw = self.read_fd.readinto(__buffer)
@@ -44,7 +49,7 @@ class LocalFileController(FileController):
         self.__write_in_file_size += wrt_len
         if self.__write_in_file_size == self.max_file_size:
             self.write_fd.close()
-            open(os.path.join( self.base_dir, "%d.blk" % self.num_trunks ), "ab")
+            self.write_fd = open(os.path.join( self.base_dir, "%d.blk" % self.num_trunks ), "ab")
             self.num_trunks += 1
             self.__write_in_file_size = 0
         return wrt_len
@@ -100,6 +105,7 @@ class LocalFileController(FileController):
             try:
                 f = open(os.path.join( self.base_dir, "%d.blk" % trunk_id), "rb")
             except FileNotFoundError:
+                print(os.path.join( self.base_dir, "%d.blk" % trunk_id))
                 break
             f.seek( (offset + read_pos) % self.max_file_size, io.SEEK_SET )
             v = f.read(length)

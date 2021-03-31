@@ -3,7 +3,7 @@ from ..file_controller import LocalFileController
 import os
 
 class LocalDataset(Dataset):
-    def __init__(self, base_dir, buffer_size, **kwargs) -> None:
+    def __init__(self, base_dir, mode, buffer_size = 128 * 1024, **kwargs) -> None:
         if not os.path.exists( os.path.join(base_dir, "data") ):
             os.makedirs(  os.path.join(base_dir, "data")  )
         if not os.path.exists( os.path.join(base_dir, "index") ):

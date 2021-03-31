@@ -39,7 +39,7 @@ def shuffle_read(ds):
 def seek_test(ds):
     ds.seek(1, 2) # go to the last one
     print(ds.tell())
-    assert ds.read()["index"] % 339397 == len(ds) - 1
+    assert ds.read()["index"] % 339397 == 339396
     ds.seek(128, 0) # go to the 129th item
     print(ds.tell())
     assert ds.read()["index"] == 128

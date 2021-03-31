@@ -4,6 +4,7 @@ import io
 
 class Dataset:
     def __init__(self, index_controller : FileController, data_controller : FileController, buffer_size = 128 * 1024) -> None:
+        self.__closed = True
         self.__index_controller = index_controller
         self.__data_controller = data_controller
         self.__index_reader = io.BufferedReader(index_controller, buffer_size=buffer_size)
@@ -15,6 +16,7 @@ class Dataset:
 
         self.__real_data_size = self.__data_controller.size
         self.__tell = 0
+        self.__size = self.__index_controller.size // 8
     
     def __del__(self):
         self.close()
@@ -43,6 +45,7 @@ class Dataset:
             raise RuntimeError("file closed")
         self.__data_writer.write(data)
         self.__real_data_size += len(data)
+        self.__size += 1
         self.__index_controller.write( struct.pack("Q", self.__real_data_size) )
 
     
@@ -66,13 +69,13 @@ class Dataset:
         elif whence == io.SEEK_CUR:
             nw_pos = self.__tell + offset
         elif whence == io.SEEK_END:
-            nw_pos = self.__real_data_size - offset
+            nw_pos = self.__size - offset
         else:
             raise ValueError("Invalid whence: %d" % whence)
         if nw_pos < 0:
             nw_pos = 0
-        if nw_pos > self.__real_data_size:
-            nw_pos = self.__real_data_size
+        if nw_pos > self.__size:
+            nw_pos = self.__size
         if nw_pos > 0:
             self.__index_reader.seek((nw_pos - 1) * 8, io.SEEK_SET)
             self.__last_read_pos = struct.unpack("Q", self.__index_reader.read(8))[0]
@@ -95,8 +98,8 @@ class Dataset:
         return self.__data_controller.pread( last_pos, curr_pos - last_pos )
     
     def size(self) -> int:
-        raise self.__real_data_size
+        return self.__size
     
     def tell(self) -> int:
-        raise self.__tell
+        return self.__tell
     

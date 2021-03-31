@@ -25,7 +25,7 @@ class RowDataset(Dataset):
     
     def read(self) -> Union[Any, None]:
         v = self.__ds.read()
-        if len(v) == 0:
+        if v is None or len(v) == 0:
             return None
         return self.__serializer.deserialize( v )
     
