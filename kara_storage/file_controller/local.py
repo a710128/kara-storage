@@ -1,87 +1,112 @@
+from _typeshed import WriteableBuffer, ReadableBuffer
 import os, io
+from typing import Optional
 from .base import FileController
 class LocalFileController(FileController):
-    def __init__(self, base_dir, max_file_size = 128 * 1024 * 1024, buffer_size = 128 * 1024):
-        self.__base_dir = base_dir
-        self.__max_file_size = max_file_size
-        self.__buffer_size = buffer_size
+    def __init__(self, base_dir, max_file_size = 128 * 1024 * 1024):
+        self.base_dir = base_dir
+        self.max_file_size = max_file_size
+        self.__closed = False
 
-        self.__tell = 0
-        self.__rdin_file_size = 0
-        self.__read_fd = None
-
+        self.read_pos = 0
+        self.num_trunks = 0
         self.__size = 0
-        self.__wrin_file_size = 0
 
-        cnt = 0
+        last_fs = max_file_size
+        while os.path.exists(os.path.join( self.base_dir, "%d.blk" % self.num_trunks)):
+            fs = os.stat(os.path.join( self.base_dir, "%d.blk" % self.num_trunks))
+            self.__size += fs
+            if last_fs != max_file_size:
+                raise RuntimeError("Broken trunk %d (size: %d)" % (self.num_trunks, fs))
+            last_fs = fs
+            self.num_trunks += 1
 
-        while os.path.exists( os.path.join(self.__base_dir, "%d.blk" % cnt) ):
-            cnt += 1
-            self.__size += os.stat( os.path.join(self.__base_dir, "%d.blk" % cnt) ).st_size
-        self.__num_trunks = cnt
+        self.__write_in_file_size = last_fs
+        self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % 0), "rb")
+        self.write_fd = open(os.path.join( self.base_dir, "%d.blk" % (self.num_trunks - 1) ), "ab")
 
-        self.__wrin_file_size = self.__size % max_file_size
-        self.__write_fd = io.BufferedWriter(open( os.path.join(self.__base_dir, "%d.blk" % (self.__num_trunks - 1)), "wb" ), buffer_size=self.__buffer_size)
-
+    def readinto(self, __buffer: WriteableBuffer) -> Optional[int]:
+        lw = self.read_fd.readinto(__buffer)
+        if lw is None:
+            return None
+        self.read_pos += lw
+        if self.read_pos % self.max_file_size == 0:
+            nx_trunk = self.read_pos // self.max_file_size
+            if nx_trunk < self.num_trunks:
+                self.read_fd.close()
+                self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % nx_trunk), "rb")
+        return lw
     
-    def read(self, length : int ) -> bytes:
-        if self.__tell + length > self.__size:
-            length = self.__size - self.__tell
+    def write(self, __b: ReadableBuffer) -> Optional[int]:
+        wrt_len = min( len(__b), self.max_file_size - self.__write_in_file_size )
+        self.write_fd.write( __b[:wrt_len] )
+        
+        self.__size += wrt_len
+        self.__write_in_file_size += wrt_len
+        if self.__write_in_file_size == self.max_file_size:
+            self.write_fd.close()
+            open(os.path.join( self.base_dir, "%d.blk" % self.num_trunks ), "ab")
+            self.num_trunks += 1
+            self.__write_in_file_size = 0
+        return wrt_len
+    
+    def seek(self, __offset: int, __whence: int) -> int:
+        nw_pos = __offset
+        if __whence == io.SEEK_CUR:
+            nw_pos = self.read_pos + __offset
+        elif __whence == io.SEEK_END:
+            nw_pos = self.__size - __offset
+        if nw_pos < 0:
+            nw_pos = 0
+        if nw_pos > self.__size:
+            nw_pos = self.__size
+        
+        nx_trunk =  nw_pos // self.max_file_size
+        self.read_fd.close()
+        self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % nx_trunk), "rb")
+        self.read_fd.seek( nw_pos % self.max_file_size )
+        self.read_pos = nw_pos
+        return self.read_pos
+    
+    def flush(self):
+        self.write_fd.flush()
+    
+    @property
+    def tell(self) -> int:
+        return self.read_pos
+
+    def close(self) -> None:
+        if not self.__closed:
+            self.read_fd.close()
+            self.read_fd = None
+            self.write_fd.close()
+            self.write_fd = None
+            self.__closed = True
+    
+    @property
+    def closed(self):
+        return self.__closed
+
+    @property
+    def size(self) -> int:
+        return self.__size
+    
+    def pread(self, offset : int, length : int) -> bytes:
+        trunk_id = offset // self.max_file_size
         rest_length = length
+        read_pos = 0
 
         ret = io.BytesIO()
         while rest_length > 0:
-            curr_len = min(rest_length, self.__max_file_size - self.__rdin_file_size)
-            ret.write( self.__read_fd.read(curr_len) )
-            
-            rest_length -= curr_len
-            self.__rdin_file_size += curr_len
-            self.__tell += curr_len
+            try:
+                f = open(os.path.join( self.base_dir, "%d.blk" % trunk_id), "rb")
+            except FileNotFoundError:
+                break
+            f.seek( (offset + read_pos) % self.max_file_size, io.SEEK_SET )
+            v = f.read(length)
 
-            if self.__rdin_file_size == self.__max_file_size:
-                self.open_trunk( self.__tell // self.__max_file_size )
-                self.__rdin_file_size = 0
+            read_pos += len(v)
+            rest_length -= len(v)
+            trunk_id += 1
+            ret.write(v)
         return ret.getvalue()
-    
-    def write(self, data : bytes):
-        while len(data) > 0:
-            curr_len = min( len(data), self.__max_file_size - self.__wrin_file_size )
-            self.__write_fd.write( data[:curr_len] )
-
-            data = data[curr_len:]
-            self.__wrin_file_size += curr_len
-            self.__size += curr_len
-
-            if self.__wrin_file_size == self.__max_file_size:
-                self.__write_fd.close()
-                self.__write_fd = io.BufferedWriter(open( os.path.join(self.__base_dir, "%d.blk" % self.__num_trunks), "wb" ), buffer_size=self.__buffer_size)
-                self.__num_trunks += 1
-                self.__wrin_file_size = 0
-    
-    def seek(self, offset):
-        self.__tell = offset
-        self.__rdin_file_size = self.__tell % self.__max_file_size
-        self.open_trunk(self.__tell // self.__max_file_size, self.__rdin_file_size)
-    
-    @property
-    def tell(self):
-        return self.__tell
-    
-    @property
-    def size(self):
-        return self.__size
-
-    def open_trunk(self, trunk_id, in_trunk_offset=0):
-        if self.__read_fd is not None:
-            self.__read_fd.close()
-            self.__read_fd = None
-        fd = open( os.path.join(self.__base_dir, "%d.blk" % trunk_id), "rb" )
-        fd.seek(in_trunk_offset, io.SEEK_SET)
-        self.__read_fd = io.BufferedReader(fd, buffer_size=self.__buffer_size)
-
-    def close(self):
-        if self.__read_fd is not None:
-            self.__read_fd.close()
-            self.__read_fd = None
-        self.__write_fd.close()
-        self.__write_fd = None
