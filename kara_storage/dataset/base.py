@@ -1,6 +1,7 @@
+
 class Dataset:
-    def __init__(self, dir : str, mode : str, **kwargs) -> None:
-        raise NotImplementedError
+    def __init__(self, index_controller ) -> None:
+        pass
     
     @property
     def closed(self):
