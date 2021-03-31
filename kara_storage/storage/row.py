@@ -5,7 +5,7 @@ import os
 from ..dataset import Dataset
 from ..serialization import Serializer, JSONSerializer
 
-class RowDataset(Dataset):
+class RowDataset:
     def __init__(self, ds : Dataset, serializer : Serializer):
         self.__ds = ds
         self.__serializer = serializer
@@ -25,7 +25,7 @@ class RowDataset(Dataset):
     
     def read(self) -> Union[Any, None]:
         v = self.__ds.read()
-        if len(v) == 0:
+        if v is None or len(v) == 0:
             return None
         return self.__serializer.deserialize( v )
     
@@ -62,8 +62,8 @@ class RowDataset(Dataset):
 
 
 class RowStorage:
-    def __init__(self, uri : str) -> None:
-        uri = urlparse(uri)
+    def __init__(self, url : str, **kwargs) -> None:
+        uri = urlparse(url)
         if uri.scheme == "file":
             path = ""
             if uri.netloc == "":
@@ -71,9 +71,11 @@ class RowStorage:
             else:
                 path = os.path.join( os.path.abspath(uri.netloc), uri.path)
             from .local import LocalRowStorage
-            self.__storage = LocalRowStorage(path)
-        else:
-            raise ValueError("Proto %s not supported" % uri.scheme)
+            self.__storage = LocalRowStorage(path, **kwargs)
+        elif uri.scheme == "oss":
+            from .oss import OSSRowStorage
+            self.__storage = OSSRowStorage(uri.path[1:], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            
     
     def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:
         version = "%s" % version

@@ -8,7 +8,7 @@ def random_read(ds):
 
     random.seed(0)
     idx = []
-    for i in tqdm(range(10000)):
+    for i in tqdm(range(1000)):
         id = random.randint(0, length - 1)
         v = ds[id]
         idx.append(v["index"])
@@ -39,7 +39,8 @@ def shuffle_read(ds):
 def seek_test(ds):
     ds.seek(1, 2) # go to the last one
     print(ds.tell())
-    assert ds.read()["index"] % 339397 == len(ds) - 1
+    v = ds.read()
+    assert v["index"] % 339397 == 339396
     ds.seek(128, 0) # go to the 129th item
     print(ds.tell())
     assert ds.read()["index"] == 128
@@ -49,7 +50,11 @@ def seek_test(ds):
 
 
 def main():
-    storage = kara_storage.RowStorage("file://kara_data")
+    storage = kara_storage.RowStorage (
+        "oss://oss-cn-beijing.aliyuncs.com/rich-spider", 
+        app_key="***APP_KEY***", 
+        app_secret="***APP_SECRET***"
+    )
     ds = storage.open("test", "a/b/c", "r")
 
     random_read(ds)
