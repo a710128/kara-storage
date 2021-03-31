@@ -16,17 +16,21 @@ class Dataset:
         self.__real_data_size = self.__data_controller.size
         self.__tell = 0
     
+    def __del__(self):
+        self.close()
+    
     @property
     def closed(self):
         return self.__closed
     
     def close(self):
         if not self.__closed:
-            self.__closed = True
+            self.flush()
             self.__index_reader.close()
             self.__index_writer.close()
             self.__data_reader.close()
             self.__data_writer.close()
+            self.__closed = True
     
     def flush(self):
         if self.__closed:

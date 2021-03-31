@@ -21,22 +21,7 @@ def main():
         ],
         python_requires=">=3.6",
         setup_requires=["wheel"],
-        install_requires=get_requirements(),
-        include_package_data=True,
-        ext_modules=[
-            setuptools.Extension("kara_storage._C.local_dataset",
-                extra_compile_args=["-O2","-Wall","-std=c++11", "-faligned-new"],
-                sources = [
-                    "csrc/storage/local.cpp",
-                    "csrc/python_local_dataset.cpp", 
-                    "csrc/trunk_controller.cpp", 
-                    "csrc/dataset.cpp"
-                ],
-                include_dirs = [
-                    "csrc/includes"
-                ],
-            )
-        ]
+        install_requires=get_requirements()
     )
 
 if __name__ == "__main__":
