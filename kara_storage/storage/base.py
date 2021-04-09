@@ -1,4 +1,5 @@
 
+from kara_storage.storage import local
 from typing import Any, Generator, Union
 from urllib.parse import urlparse
 import os
@@ -61,7 +62,7 @@ class RowDataset:
         
 
 
-class RowStorage:
+class KaraStorage:
     def __init__(self, url : str, **kwargs) -> None:
         uri = urlparse(url)
         if uri.scheme == "file":
@@ -70,16 +71,24 @@ class RowStorage:
                 path = uri.path
             else:
                 path = os.path.join( os.path.abspath(uri.netloc), uri.path)
-            from .local import LocalRowStorage
-            self.__storage = LocalRowStorage(path, **kwargs)
+            from .local import LocalStorage
+            self.__storage = LocalStorage(path, **kwargs)
         elif uri.scheme == "oss":
-            from .oss import OSSRowStorage
-            self.__storage = OSSRowStorage(uri.path[1:], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            from .oss import OSSStorage
+            self.__storage = OSSStorage(uri.path[1:], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
             
     
     def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:
-        version = "%s" % version
+        version = str(version)
         if serialization is None:
             serialization = JSONSerializer()
         return RowDataset(self.__storage.open(namespace, key, mode, version, **kwargs), serialization)
 
+    def loadDirectory(self, namespace, key, local_path, version="latest"):
+        version = str(version)
+        return self.__storage.loadDirectory(namespace, key, local_path, version)
+    
+    def saveDirectory(self, namespace, key, local_path, version=None):
+        if version is not None:
+            version = str(version)
+        return self.__storage.saveDirectory(namespace, key, local_path, version)

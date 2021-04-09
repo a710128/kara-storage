@@ -1,1 +1,1 @@
-from .row import RowStorage, RowDataset
+from .base import KaraStorage, RowDataset

@@ -4,10 +4,10 @@ KARA 平台存储模块！！！
 
 ## 1. 介绍
 
-kara_storage是KARA平台存储模块的Python SDK，目前提供了行存储的服务，在将来还会提供对象存储的服务。
+kara_storage是KARA平台存储模块的Python SDK，目前提供了行存储和对象存储的服务。
 
 ### 1.1 行存储
-__行存储__ 以条为单位实现数据的写入和读取，可以轻松的完成大规模训练数据的存储，理论上可以支持任意形式的数据（包括类和bytes，不过目前没有提供相关接口）。
+__行存储__ 以条为单位实现数据的写入和读取，可以轻松的完成大规模训练数据的存储，理论上可以支持任意形式的数据（包括类和bytes，对于任意类型的数据支持请实现自己的Serializer）。
 
 __性能__
 
@@ -33,6 +33,8 @@ SDK提供流式读取服务和流式Shuffle服务，我们在大小为1011MB的�
 ### 1.2 对象存储
 __对象存储__ 是一种以文件为单位的 Key-Value 数据库，可以实现各种尺寸的文件的存储。在kara_storage中，对象存储用于保存目录，例如模型的训练结果等
 
+目前工具包提供了 `loadDirectory` 和 `saveDirectory` 两个接口的支持。
+
 
 ### 1.3 安装方法
 
@@ -50,7 +52,7 @@ $ python setup.py install
 
 ```python
 import kara_storage
-storage = kara_storage.RowStorage("file:///path/to/your/database")
+storage = kara_storage.KaraStorage("file:///path/to/your/database")
 ```
 其中`/path/to/your/database`表示数据库的绝对路径。
 
@@ -58,11 +60,24 @@ storage = kara_storage.RowStorage("file:///path/to/your/database")
 
 ```python
 import kara_storage
-storage = kara_storage.RowStorage("file://my/databse")
+storage = kara_storage.KaraStorage("file://my/databse")
 ```
 其中 `my/database` 表示数据库在当前工作目录下的相对路径。
 
-### 2.2 打开数据集
+##### 打开阿里云上的数据库
+
+```python
+import kara_storage
+storage = kara_storage.KaraStorage("oss://OSS_ENDPOINT/YOUR_BUCKET_NAME", app_key="*** APP KEY ***", app_secret="*** APP SECRET ***")
+```
+
+其中`OSS_ENDPOINT`表示oss的节点，例如`oss-cn-beijing.aliyuncs.com`。
+
+在使用阿里云上的数据库前，请确保你的APP KEY和APP SECRET有权限访问数据库。
+
+
+### 2.2 行存储
+#### 2.2.1 打开数据集
 
 ```python
 dataset = storage.open("namespace", "dataset_name", "r", version="latest")
@@ -77,7 +92,7 @@ dataset = storage.open("namespace", "dataset_name", "r", version="latest")
 
 如果要打开的数据集不存在，`open`命令会自动创建一个对应的数据集，在创建新数据集时，必须要指定数据集的`version`，否则会报错或打开最新一次修改的数据集。
 
-### 2.3 读取数据集
+#### 2.2.2 读取数据集
 
 ```python
 data = dataset.read()
@@ -86,7 +101,7 @@ data = dataset.read()
 
 对于同一个数据集，从里面读取出的数据的顺序总是和写入时相同。当数据被读取完时，将会返回`None`。
 
-### 2.4 追加写入数据集
+#### 2.2.3 追加写入数据
 
 ```python
 ok = dataset.write(obj)
@@ -97,7 +112,7 @@ ok = dataset.write(obj)
 
 __提示__ : 在调用`dataset.close()`时，`flush`也会被自动的调用。
 
-### 2.5 移动读取指针
+#### 2.2.4 移动读取指针
 
 ```python
 dataset.seek(offset, whence)
@@ -119,7 +134,39 @@ dataset.seek(offset, whence)
 
 例如：`dataset.seek(0, 2)`表示移动到数据集末尾，此时调用`read`接口会返回`None`。
 
-### 2.6 和Pytorch对接
+#### 2.2.5 实现自己的序列化方法
+
+用户可以通过实现自己的`Serializer`来使用自定义的方法序列化数据，同时也可以使用我们内置的其它方法来替换我们的默认序列化方法。
+
+##### 编写自己的 Serializer
+
+```python
+import kara_storage
+import pickle
+
+class MySerializer(kara_storage.serialization.Serializer):
+    def serialize(self, x): # 序列化x，将x转换为bytes
+        return pickle.dumps(x)
+    
+    def deserialize(self, x): # 反序列化x，将x从bytes重新转换回对象
+        return pickle.loads(x)
+```
+
+##### 使用自己的序列化方法
+
+```python
+import kara_storage
+dataset = storage.open("namespace", "dataset_name", "r", version="latest", serialization=MySerializer())
+```
+
+##### 其它内置序列化方法
+
+* kara_storage.serialization.NoSerializer: 直接将bytes数据写入数据库
+* kara_storage.serialization.PickleSerializer: 将对象使用pickle序列化后存入数据库
+* kara_storage.serialization.JSONSerializer: 将数据转换为json字符串存入数据库
+
+
+#### 2.2.6 和Pytorch对接
 
 以上接口提供了简单的流式访问，为了更好的支持pytorch的d`DataLoader`，我们提供了KARA行存储对`torch.utils.data.IterableDataset`的包装。
 
@@ -157,7 +204,37 @@ kara_storage.make_torch_dataset(dataset, shuffle=True)
 
 在默认情况下，这些参数的值为`seed = 0`，`buffer_size = 10240`，`shuffle_ratio = 0.1`
 
-## 3. 可复现性
+#### 2.2.7. 可复现性
 
 在数据集固定、GPU数量固定、随机参数（seed, buffer_size, shuffle_ratio）固定时，`make_torch_dataset`接口返回的数据集总能以相同的顺序读取出相同的数据。
 
+### 2.3 对象存储
+
+#### 2.3.1 从服务器加载对象
+
+```python
+storage.loadDirectory("namespace", "object_name", "local_path", "version")
+```
+
+`loadDirectory`会返回一个字符串，表示当前加载的对象的版本。它主要包含4个参数：
+
+* namespace: 命名空间
+* object_name: 要加载的对象名称
+* local_path: 要加载到的本地路径
+* version: 要加载的数据版本，默认为`"latest"`，即表示加载最新的版本
+
+#### 2.3.2 将本地对象上传到服务器
+
+```python
+storage.saveDirectory("namespace", "object_name", "local_path", "version")
+```
+
+`saveDirectory`会返回一个字符串，表示当前保存的对象的版本。它主要包含4个参数：
+* namespace: 命名空间
+* object_name: 要加载的对象名称
+* local_path: 要加载到的本地路径
+* version: 要加载的数据版本，默认为`None`，表示自动生成一个不重复的版本号
+
+## 3. 其它
+
+欢迎大家测试、提issue！
