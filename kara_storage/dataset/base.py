@@ -3,8 +3,9 @@ import struct
 import io
 
 class Dataset:
-    def __init__(self, index_controller : FileController, data_controller : FileController, buffer_size = 128 * 1024) -> None:
+    def __init__(self, index_controller : FileController, data_controller : FileController, mode, buffer_size = 128 * 1024) -> None:
         self.__closed = True
+        self.__mode = mode
         self.__index_controller = index_controller
         self.__data_controller = data_controller
         self.__index_reader = io.BufferedReader(index_controller, buffer_size=buffer_size)

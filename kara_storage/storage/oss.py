@@ -40,7 +40,7 @@ class OSSStorage:
             if version not in config["versions"]:
                 raise ValueError("Dataset version `%s` not found in dataset `%s`" % (version, key))
 
-        return OSSDataset( "row/%s/%s/%s/" % (namespace, key, version), self.bucket, **kwargs )
+        return OSSDataset( "row/%s/%s/%s/" % (namespace, key, version), self.bucket, mode, **kwargs )
 
 
     def loadDirectory(self, namespace, key, local_path, version) -> str:

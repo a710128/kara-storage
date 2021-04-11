@@ -2,7 +2,7 @@ import os, io
 from typing import Optional
 from .base import FileController
 class LocalFileController(FileController):
-    def __init__(self, base_dir, max_file_size = 128 * 1024 * 1024):
+    def __init__(self, base_dir, mode, max_file_size = 128 * 1024 * 1024):
         self.base_dir = base_dir
         self.max_file_size = max_file_size
         self.__closed = False
@@ -23,9 +23,12 @@ class LocalFileController(FileController):
         if self.num_trunks == 0:
             self.num_trunks += 1
             last_fs = 0
-        self.__write_in_file_size = last_fs
-        self.write_fd = open(os.path.join( self.base_dir, "%d.blk" % (self.num_trunks - 1) ), "ab")
-        self.write_fd.flush()
+        if mode == "w":
+            self.__write_in_file_size = last_fs
+            self.write_fd = open(os.path.join( self.base_dir, "%d.blk" % (self.num_trunks - 1) ), "ab")
+            self.write_fd.flush()
+        else:
+            self.write_fd = None
         self.read_fd = open(os.path.join( self.base_dir, "%d.blk" % 0), "rb")
         
 
@@ -73,7 +76,8 @@ class LocalFileController(FileController):
         return self.read_pos
     
     def flush(self):
-        self.write_fd.flush()
+        if self.write_fd is not None:
+            self.write_fd.flush()
     
     def tell(self) -> int:
         return self.read_pos
@@ -82,8 +86,9 @@ class LocalFileController(FileController):
         if not self.__closed:
             self.read_fd.close()
             self.read_fd = None
-            self.write_fd.close()
-            self.write_fd = None
+            if self.write_fd is not None:
+                self.write_fd.close()
+                self.write_fd = None
             self.__closed = True
     
     @property
