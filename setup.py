@@ -5,11 +5,7 @@ from tools import get_requirements, get_readme
 def main():
     setuptools.setup(
         name="kara_storage",
-<<<<<<< HEAD
         version="1.0.1",
-=======
-        version="1.0.0",
->>>>>>> 74b1eaa18c557906f92190fa23dfdb0bc965f816
         author="a710128",
         author_email="qbjooo@qq.com",
         description="Kara Storage SDK",
