@@ -170,3 +170,5 @@ Mkfile.old
 dkms.conf
 
 .vscode
+
+log
