@@ -97,7 +97,7 @@ dataset[len(dataset) - 1] # { "sentence": "world!" }
 pytorch_ds = kara_storage.make_torch_dataset(dataset, shuffle=True)
 ```
 
-kara storage提供了方便的`kara_storage.make_torch_datase`函数，来对kara行存储对象进行包装，并返回torch.utils.data.IterableDataset。
+kara storage提供了方便的`kara_storage.make_torch_datase`函数，来对kara行存储对象进行包装，并返回`torch.utils.data.IterableDataset`。
 
 除此之外，我们还提供了自动的局部shuffle功能，在配合使用`DataLoader`时，请将`Dataloader`的`shuffle`参数设置为`False`。
 
@@ -107,4 +107,4 @@ kara storage提供了方便的`kara_storage.make_torch_datase`函数，来对kar
 
 请在每一轮训练前使用`pytorch_ds.set_epoch(epoch_num)`来重置数据集读取指针，如果你启用了`shuffle`选项，这个操作也将重新打乱数据集。
 
-__注意__： 对于 validation和test 数据集也应该在每次测试前调用 set_epoch 函数！
+__注意__： 对于 validation和test 数据集也应该在每次测试前调用 `set_epoch` 函数！
