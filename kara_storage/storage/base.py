@@ -2,6 +2,7 @@
 from kara_storage.storage import local
 from typing import Any, Generator, Union
 from urllib.parse import urlparse
+import multiprocessing as mp
 import os
 from ..dataset import Dataset
 from ..serialization import Serializer, JSONSerializer
@@ -10,40 +11,49 @@ class RowDataset:
     def __init__(self, ds : Dataset, serializer : Serializer):
         self.__ds = ds
         self.__serializer = serializer
+        self.lock = mp.Lock()
 
     @property
     def closed(self):
         return self.__ds.closed
     
     def close(self):
-        return self.__ds.close()
+        with self.lock:
+            return self.__ds.close()
     
     def flush(self):
-        return self.__ds.flush()
+        with self.lock:
+            return self.__ds.flush()
     
     def write(self, data : Any):
-        return self.__ds.write( self.__serializer.serialize(data) )
+        with self.lock:
+            return self.__ds.write( self.__serializer.serialize(data) )
     
     def read(self) -> Union[Any, None]:
-        v = self.__ds.read()
-        if v is None or len(v) == 0:
-            return None
-        return self.__serializer.deserialize( v )
+        with self.lock:
+            v = self.__ds.read()
+            if v is None or len(v) == 0:
+                return None
+            return self.__serializer.deserialize( v )
     
     def seek(self, offset : int, whence : int) -> int:
-        return self.__ds.seek(offset, whence)
+        with self.lock:
+            return self.__ds.seek(offset, whence)
     
     def pread(self, offset : int) -> Union[Any, None]:
-        v = self.__ds.pread(offset)
-        if len(v) == 0:
-            return None
-        return self.__serializer.deserialize( v )
+        with self.lock:
+            v = self.__ds.pread(offset)
+            if len(v) == 0:
+                return None
+            return self.__serializer.deserialize( v )
     
     def size(self) -> int:
-        return self.__ds.size()
+        with self.lock:
+            return self.__ds.size()
     
     def tell(self) -> int:
-        return self.__ds.tell()
+        with self.lock:
+            return self.__ds.tell()
     
     def __len__(self) -> int:
         return self.size()
