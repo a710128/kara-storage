@@ -29,7 +29,7 @@ def main():
     rank = torch.distributed.get_rank()
     
 
-    storage = kara_storage.RowStorage("file://kara_data")
+    storage = kara_storage.KaraStorage("file://kara_data")
     ds = storage.open("test", "a/b/c")
     
 

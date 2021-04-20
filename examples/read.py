@@ -50,7 +50,7 @@ def seek_test(ds):
 
 
 def main():
-    storage = kara_storage.RowStorage (
+    storage = kara_storage.KaraStorage (
         "oss://oss-cn-beijing.aliyuncs.com/rich-spider", 
         app_key="***APP_KEY***", 
         app_secret="***APP_SECRET***"

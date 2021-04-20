@@ -3,7 +3,7 @@ import json
 from tqdm import tqdm
 
 def main():
-    storage = kara_storage.RowStorage("file://kara_data")
+    storage = kara_storage.KaraStorage("file://kara_data")
     ds = storage.open("test", "a/b/c", "w", version=1)
 
     fp = open("/data/private/zengguoyang/data.json", "r", encoding="utf-8")
