@@ -1,7 +1,7 @@
 
 from typing import Any, Generator, Union
 from urllib.parse import urlparse
-import multiprocessing as mp
+import threading
 import os
 from ..dataset import Dataset
 from ..serialization import Serializer, JSONSerializer
@@ -10,7 +10,7 @@ class RowDataset:
     def __init__(self, ds : Dataset, serializer : Serializer):
         self.__ds = ds
         self.__serializer = serializer
-        self.lock = mp.Lock()
+        self.lock = threading.Lock()
 
     @property
     def closed(self):
