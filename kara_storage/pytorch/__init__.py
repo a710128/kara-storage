@@ -1,7 +1,13 @@
-def make_torch_dataset(ds, shuffle=False, distributed=True, begin=None, end=None, **kwargs):
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .base import KaraPytorchDatasetBase
+
+def make_torch_dataset(ds, shuffle=False, distributed=True, begin=None, end=None, **kwargs) -> 'KaraPytorchDatasetBase':
     from .shuffle import ShuffleDatasetWrapper
     from .iter import IterDatasetWrapper
-    from .slice import SliceDatasetWrapper
+
+    from .slice_wrapper import SliceDatasetWrapper
+    from .lock_wrapper import LockedDatasetWrapper
 
     
     import torch
@@ -23,6 +29,7 @@ def make_torch_dataset(ds, shuffle=False, distributed=True, begin=None, end=None
         if begin != 0 or end != len(ds):
             ds = SliceDatasetWrapper( ds, begin, end - begin )
     if shuffle:
-        return ShuffleDatasetWrapper(ds, **kwargs)
+        ret =ShuffleDatasetWrapper(ds, **kwargs)
     else:
-        return IterDatasetWrapper(ds)
+        ret = IterDatasetWrapper(ds)
+    return LockedDatasetWrapper(ret)

@@ -2,15 +2,15 @@ import io
 from typing import Optional
 
 class FileController(io.RawIOBase):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, mode) -> None:
+        self.__mode = mode
     
     def readable(self) -> bool:
-        return True
+        return "r" in self.__mode
     def writable(self) -> bool:
-        return True
+        return "w" in self.__mode
     def seekable(self) -> bool:
-        return True
+        return "r" in self.__mode
     
     def readinto(self, __buffer) -> Optional[int]:
         raise NotImplementedError

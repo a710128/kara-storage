@@ -10,10 +10,12 @@ class Dataset:
         self.__readable = ("r" in mode)
         self.__index_controller = index_controller
         self.__data_controller = data_controller
-        self.__index_reader = io.BufferedReader(index_controller, buffer_size=buffer_size)
-        self.__data_reader = io.BufferedReader(data_controller, buffer_size=buffer_size)
-        self.__index_writer = io.BufferedWriter(index_controller, buffer_size=buffer_size)
-        self.__data_writer = io.BufferedWriter(data_controller, buffer_size=buffer_size)
+        if self.__readable:
+            self.__index_reader = io.BufferedReader(index_controller, buffer_size=buffer_size)
+            self.__data_reader = io.BufferedReader(data_controller, buffer_size=buffer_size)
+        if self.__writable:
+            self.__index_writer = io.BufferedWriter(index_controller, buffer_size=buffer_size)
+            self.__data_writer = io.BufferedWriter(data_controller, buffer_size=buffer_size)
         self.__closed = False
         self.__last_read_pos = 0
 
@@ -31,10 +33,12 @@ class Dataset:
     def close(self):
         if not self.__closed:
             self.flush()
-            self.__index_reader.close()
-            self.__index_writer.close()
-            self.__data_reader.close()
-            self.__data_writer.close()
+            if self.__readable:
+                self.__index_reader.close()
+                self.__data_reader.close()
+            if self.__writable:
+                self.__index_writer.close()
+                self.__data_writer.close()
             self.__closed = True
     
     def flush(self):
@@ -74,7 +78,7 @@ class Dataset:
         
 
     
-    def seek(self, offset : int, whence : int = 0) -> int:
+    def seek(self, offset : int, whence : int) -> int:
         if self.__closed:
             raise RuntimeError("Dataset closed")
 

@@ -6,8 +6,8 @@ class OSSDataset(Dataset):
         if not prefix.endswith("/"):
             prefix = prefix + "/"
         
-        idx_controller = OSSFileController(prefix + "index/", bucket, **kwargs)
-        dat_controller = OSSFileController(prefix +  "data/", bucket, **kwargs)
+        idx_controller = OSSFileController(prefix + "index/", bucket, mode, **kwargs)
+        dat_controller = OSSFileController(prefix +  "data/", bucket, mode, **kwargs)
 
         super().__init__(idx_controller, dat_controller, mode, buffer_size=buffer_size)
     

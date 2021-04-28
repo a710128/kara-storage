@@ -4,7 +4,9 @@ from .base import FileController
 
 
 class OSSFileController(FileController):
-    def __init__(self, prefix : str, bucket, max_file_size = 1024 * 1024 * 1024) -> None:
+    def __init__(self, prefix : str, bucket, mode : str, max_file_size = 1024 * 1024 * 1024) -> None:
+        super().__init__(mode=mode)
+
         import oss2
         self.bucket = bucket
 

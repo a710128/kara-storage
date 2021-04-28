@@ -3,6 +3,8 @@ from typing import Optional
 from .base import FileController
 class LocalFileController(FileController):
     def __init__(self, base_dir, mode, max_file_size = 128 * 1024 * 1024):
+        super().__init__(mode=mode)
+        
         self.base_dir = base_dir
         self.max_file_size = max_file_size
         self.__closed = False

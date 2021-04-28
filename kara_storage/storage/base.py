@@ -35,7 +35,7 @@ class RowDataset:
                 return None
             return self.__serializer.deserialize( v )
     
-    def seek(self, offset : int, whence : int) -> int:
+    def seek(self, offset : int, whence : int = 0) -> int:
         with self.lock:
             return self.__ds.seek(offset, whence)
     

@@ -1,8 +1,8 @@
 import random
-import torch.utils.data as data
+from .base import KaraPytorchDatasetBase
 from ..storage import RowDataset
 
-class ShuffleDatasetWrapper(data.IterableDataset):
+class ShuffleDatasetWrapper(KaraPytorchDatasetBase):
     def __init__(self, dataset : RowDataset, seed : int = 0, buffer_size : int = 10240, shuffle_ratio : float = 0.1) -> None:
         super().__init__()
         self.__dataset = dataset

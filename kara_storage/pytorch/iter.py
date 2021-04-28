@@ -1,7 +1,7 @@
-import torch.utils.data as data
 from ..storage import RowDataset
+from .base import KaraPytorchDatasetBase
 
-class IterDatasetWrapper(data.IterableDataset):
+class IterDatasetWrapper(KaraPytorchDatasetBase):
     def __init__(self, dataset : RowDataset) -> None:
         super().__init__()
         self.__dataset = dataset
