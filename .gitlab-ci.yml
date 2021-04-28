@@ -20,7 +20,7 @@ build-job:
     expire_in: 1 week
 
 test-py36:
-  image: python:3.6-alpine
+  image: python:3.6
   stage: test
   cache:
     paths:
@@ -33,7 +33,7 @@ test-py36:
     - "python3 tests/run.py"
 
 test-py37:
-  image: python:3.7-alpine
+  image: python:3.7
   stage: test
   cache:
     paths:
@@ -46,7 +46,7 @@ test-py37:
     - "python3 tests/run.py"
 
 test-py38:
-  image: python:3.8-alpine
+  image: python:3.8
   stage: test
   cache:
     paths:
@@ -59,7 +59,7 @@ test-py38:
     - "python3 tests/run.py"
 
 test-py39:
-  image: python:3.9-alpine
+  image: python:3.9
   stage: test
   cache:
     paths:

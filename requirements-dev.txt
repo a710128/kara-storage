@@ -1,3 +1,3 @@
 torch
-mujson
+orjson
 oss2
