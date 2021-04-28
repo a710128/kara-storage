@@ -1,7 +1,7 @@
 from ..storage import RowDataset
 
 class SliceDatasetWrapper(RowDataset):
-    def __init__(self, ds : RowDataset, start, length):
+    def __init__(self, ds : RowDataset, start : int, length : int):
         self.__dataset = ds
         self.__start = start
         self.__length = length
