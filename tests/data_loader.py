@@ -1,6 +1,5 @@
 import kara_storage
 import torch.utils.data as data
-
 def main():
     storage = kara_storage.KaraStorage ( "file://kara_data" )
     ds = storage.open("test", "a/b/c", "r")    
@@ -11,3 +10,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

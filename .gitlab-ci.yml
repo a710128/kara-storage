@@ -22,32 +22,52 @@ build-job:
 test-py36:
   image: python:3.6-alpine
   stage: test
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
 test-py37:
   image: python:3.7-alpine
   stage: test
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
 test-py38:
   image: python:3.8-alpine
   stage: test
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
 test-py39:
   image: python:3.9-alpine
   stage: test
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 

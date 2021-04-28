@@ -3,6 +3,7 @@ import os, sys
 def check_cmd(cmd):
     v = os.system(cmd)
     if v != 0:
+        print(v)
         sys.exit(v)
 
 def main():
