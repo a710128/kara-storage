@@ -79,7 +79,7 @@ class KaraStorage:
             if uri.netloc == "":
                 path = uri.path
             else:
-                path = os.path.join( os.path.abspath(uri.netloc), uri.path)
+                path = os.path.abspath(uri.netloc) + uri.path
             from .local import LocalStorage
             self.__storage = LocalStorage(path, **kwargs)
         elif uri.scheme == "oss":
