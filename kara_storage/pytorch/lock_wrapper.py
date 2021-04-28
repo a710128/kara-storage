@@ -78,7 +78,10 @@ class LockedDatasetWrapper(KaraPytorchDatasetBase):
 
     def __iter__(self):
         while True:
-            yield self.__read_next()
+            try:
+                yield self.__read_next()
+            except StopIteration:
+                return
     
     def __len__(self):
         return len(self.__dataset)
