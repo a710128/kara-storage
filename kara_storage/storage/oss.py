@@ -1,21 +1,26 @@
 import os, json
-import shutil
 from ..dataset import OSSDataset, Dataset
 
 
 class OSSStorage:
-    def __init__(self, bucket, endpoint, APP_KEY, APP_SECRET) -> None:
+    def __init__(self, bucket, endpoint, prefix, APP_KEY, APP_SECRET) -> None:
         import oss2
         self.end_point = endpoint
         self.APP_KEY = APP_KEY
         self.APP_SECRET = APP_SECRET
+        if not prefix.endswith("/"):
+            prefix = prefix + "/"
+        if prefix.startswith("/"):
+            prefix = prefix[1:]
+        self.prefix = prefix
+        
 
         self.auth = oss2.Auth(self.APP_KEY, self.APP_SECRET)
-        self.bucket = oss2.Bucket(self.auth, endpoint, bucket )
+        self.bucket = oss2.Bucket(self.auth, endpoint, bucket)
         
     
     def open(self, namespace, key, mode, version, **kwargs) -> Dataset:
-        dataset_meta = "row/%s/%s/meta.json" % (namespace, key)
+        dataset_meta = self.prefix + "row/%s/%s/meta.json" % (namespace, key)
         if not self.bucket.object_exists(dataset_meta):
             if "w" not in mode:
                 raise ValueError("Dataset not exists")
@@ -40,11 +45,11 @@ class OSSStorage:
             if version not in config["versions"]:
                 raise ValueError("Dataset version `%s` not found in dataset `%s`" % (version, key))
 
-        return OSSDataset( "row/%s/%s/%s/" % (namespace, key, version), self.bucket, mode, **kwargs )
+        return OSSDataset( self.prefix +"row/%s/%s/%s/" % (namespace, key, version), self.bucket, mode, **kwargs )
 
 
     def loadDirectory(self, namespace, key, local_path, version) -> str:
-        dataset_meta = "obj/%s/%s/meta.json" % (namespace, key)
+        dataset_meta = self.prefix + "obj/%s/%s/meta.json" % (namespace, key)
         if not self.bucket.object_exists(dataset_meta):
             raise ValueError("Object storage not exists")
         
@@ -59,7 +64,7 @@ class OSSStorage:
             raise ValueError("Object version `%s` not found in storage `%s`" % (version, key))
         
         import oss2
-        data_prefix = "obj/%s/%s/%s/" % (namespace, key, version)
+        data_prefix = self.prefix + "obj/%s/%s/%s/" % (namespace, key, version)
         
         dirs = []
         files = []
@@ -81,7 +86,7 @@ class OSSStorage:
         return version
     
     def saveDirectory(self, namespace, key, local_path, version) -> str:
-        dataset_meta = "obj/%s/%s/meta.json" % (namespace, key)
+        dataset_meta = self.prefix + "obj/%s/%s/meta.json" % (namespace, key)
         if not self.bucket.object_exists(dataset_meta):
             config = {
                 "latest": None,
@@ -108,7 +113,7 @@ class OSSStorage:
         
         self.bucket.put_object(dataset_meta, json.dumps(config, ensure_ascii=False).encode('utf-8'))
 
-        data_prefix = "obj/%s/%s/%s/" % (namespace, key, version)
+        data_prefix = self.prefix + "obj/%s/%s/%s/" % (namespace, key, version)
         
         def search_in_file(path, db_path):
             self.bucket.put_object(db_path, b"")

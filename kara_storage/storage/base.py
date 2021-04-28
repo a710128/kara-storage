@@ -1,5 +1,4 @@
 
-from kara_storage.storage import local
 from typing import Any, Generator, Union
 from urllib.parse import urlparse
 import multiprocessing as mp
@@ -45,7 +44,7 @@ class RowDataset:
             v = self.__ds.pread(offset)
             if len(v) == 0:
                 return None
-            return self.__serializer.deserialize( v )
+        return self.__serializer.deserialize( v )
     
     def size(self) -> int:
         with self.lock:
@@ -85,7 +84,8 @@ class KaraStorage:
             self.__storage = LocalStorage(path, **kwargs)
         elif uri.scheme == "oss":
             from .oss import OSSStorage
-            self.__storage = OSSStorage(uri.path[1:], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            path =  uri.path.split("/")
+            self.__storage = OSSStorage(path[1], "http://" + uri.netloc,  "/".join(path[2:]), kwargs["app_key"], kwargs["app_secret"])
             
     
     def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:

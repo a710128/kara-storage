@@ -2,11 +2,10 @@ import io
 from typing import  Optional
 from .base import FileController
 
-import oss2
 
 class OSSFileController(FileController):
-    def __init__(self, prefix : str, bucket : oss2.Bucket, max_file_size = 1024 * 1024 * 1024) -> None:
-        
+    def __init__(self, prefix : str, bucket, max_file_size = 1024 * 1024 * 1024) -> None:
+        import oss2
         self.bucket = bucket
 
         self.__closed = False

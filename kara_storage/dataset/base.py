@@ -3,9 +3,11 @@ import struct
 import io
 
 class Dataset:
-    def __init__(self, index_controller : FileController, data_controller : FileController, mode, buffer_size = 128 * 1024) -> None:
+    def __init__(self, index_controller : FileController, data_controller : FileController, mode : str, buffer_size = 128 * 1024) -> None:
         self.__closed = True
         self.__mode = mode
+        self.__writable = ("w" in mode)
+        self.__readable = ("r" in mode)
         self.__index_controller = index_controller
         self.__data_controller = data_controller
         self.__index_reader = io.BufferedReader(index_controller, buffer_size=buffer_size)
@@ -36,14 +38,18 @@ class Dataset:
             self.__closed = True
     
     def flush(self):
-        if self.__closed:
-            raise RuntimeError("file closed")
-        self.__index_writer.flush()
-        self.__data_writer.flush()
+        if self.__writable:
+            if self.__closed:
+                raise RuntimeError("Dataset closed")
+            self.__index_writer.flush()
+            self.__data_writer.flush()
     
     def write(self, data : bytes):
         if self.__closed:
-            raise RuntimeError("file closed")
+            raise RuntimeError("Dataset closed")
+        if not self.__writable:
+            raise RuntimeError("Dataset not writable in mode `%s`" % self.__mode)
+
         self.__data_writer.write(data)
         self.__real_data_size += len(data)
         self.__size += 1
@@ -51,6 +57,11 @@ class Dataset:
 
     
     def read(self) -> bytes:
+        if self.__closed:
+            raise RuntimeError("Dataset closed")
+        if not self.__readable:
+            raise RuntimeError("Dataset not readable in mode `%s`" % self.__mode)
+        
         v = self.__index_reader.read(8)
         if v is None or len(v) != 8:
             return None
@@ -63,7 +74,10 @@ class Dataset:
         
 
     
-    def seek(self, offset : int, whence : int) -> int:
+    def seek(self, offset : int, whence : int = 0) -> int:
+        if self.__closed:
+            raise RuntimeError("Dataset closed")
+
         nw_pos = None
         if whence == io.SEEK_SET:
             nw_pos = offset
@@ -88,6 +102,11 @@ class Dataset:
         return self.__tell
             
     def pread(self, offset : int) -> bytes:
+        if self.__closed:
+            raise RuntimeError("Dataset closed")
+        if not self.__readable:
+            raise RuntimeError("Dataset not readable in mode `%s`" % self.__mode)
+
         if offset > 0:
             bf = self.__index_controller.pread((offset - 1) * 8, 16)
             last_pos = struct.unpack("Q", bf[:8])[0]
