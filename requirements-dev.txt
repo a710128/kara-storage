@@ -1,1 +1,3 @@
 torch
+mujson
+oss2

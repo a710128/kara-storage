@@ -1,10 +1,13 @@
 from typing import Any
 from .base import Serializer
-import orjson
+import mujson
 
 class JSONSerializer(Serializer):
     def serialize(self, x : Any) -> bytes:
-        return orjson.dumps(x)
+        v = mujson.dumps(x)
+        if isinstance(v, str):
+            v = v.encode("utf-8")
+        return v
     
     def deserialize(self, x : bytes) -> Any:
-        return orjson.loads( x )
+        return mujson.loads( x )
