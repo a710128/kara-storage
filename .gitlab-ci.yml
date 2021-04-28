@@ -5,7 +5,7 @@ stages:
 
 
 build-job:
-  image: python:alpine
+  image: python:latest
   stage: build
   cache:
     paths:
@@ -23,25 +23,25 @@ test-py36:
   image: python:3.6-alpine
   stage: test
   script:
-    - "pip3 install --upgrade tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/test.py"
+    - "python3 tests/run.py"
 
 test-py37:
   image: python:3.7-alpine
   stage: test
   script:
-    - "pip3 install --upgrade tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/test.py"
+    - "python3 tests/run.py"
 
 test-py38:
   image: python:3.8-alpine
   stage: test
   script:
-    - "pip3 install --upgrade tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/test.py"
+    - "python3 tests/run.py"
 
 test-py39:
   image: python:3.9-alpine
@@ -49,7 +49,7 @@ test-py39:
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/test.py"
+    - "python3 tests/run.py"
 
 release-step:
   image: python:latest
