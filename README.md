@@ -238,3 +238,19 @@ storage.saveDirectory("namespace", "object_name", "local_path", "version")
 ## 3. 其它
 
 欢迎大家测试、提issue！
+
+# 更新日志
+
+### 1.0.3
+
+* 添加对 pytorch DataLoader 中 num_workers > 0 时候的支持
+* 添加对 OSS 前缀访问的支持
+  *  现在可以通过 `oss://endpoint/bucket/prefix` 的方法来指定使用oss存储时的前缀
+* 修复 `"r"` 模式下可以修改数据集的问题
+
+### 1.0.2
+
+* 添加对线程安全的支持
+  * 在RowDataset中添加了线程锁 `threading.Lock`
+* 添加pytorch dataset的slice支持
+  * 通过 `kara_storage.make_torch_dataset( dataset, begin=a, end=b )` 来实现对数据集 `[a, b)` 区间的访问。
