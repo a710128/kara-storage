@@ -1,0 +1,67 @@
+stages:
+  - "build"
+  - "test"
+  - "release"
+
+
+build-job:
+  image: python:alpine
+  stage: build
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
+  script:
+    - "pip3 install --upgrade build wheel setuptools -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - 'python3 -m build'
+  artifacts:
+    paths:
+    - dist
+    expire_in: 1 week
+
+test-py36:
+  image: python:3.6-alpine
+  stage: test
+  script:
+    - "pip3 install --upgrade tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - 'pip3 install $(find dist -name "*.whl")'
+    - "python3 tests/test.py"
+
+test-py37:
+  image: python:3.7-alpine
+  stage: test
+  script:
+    - "pip3 install --upgrade tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - 'pip3 install $(find dist -name "*.whl")'
+    - "python3 tests/test.py"
+
+test-py38:
+  image: python:3.8-alpine
+  stage: test
+  script:
+    - "pip3 install --upgrade tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - 'pip3 install $(find dist -name "*.whl")'
+    - "python3 tests/test.py"
+
+test-py39:
+  image: python:3.9-alpine
+  stage: test
+  script:
+    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - 'pip3 install $(find dist -name "*.whl")'
+    - "python3 tests/test.py"
+
+release-step:
+  image: python:latest
+  stage: release
+  cache:
+    paths:
+      - .cache/pip
+      - venv/
+  script:
+    - "pip3 install --upgrade twine -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "python3 -m twine upload dist/*"
+  only:
+    - tags
+  except:
+    - branches
