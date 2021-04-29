@@ -6,14 +6,16 @@ stages:
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-cache:
-  paths:
-    - .cache/pip
-    - venv/
+
 
 build-job:
   image: python:latest
   stage: build
+  cache:
+    key: build-cache
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade build wheel setuptools -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - 'python3 -m build'
@@ -25,6 +27,11 @@ build-job:
 test-py36:
   image: python:3.6
   stage: test
+  cache:
+    key: test-cache-36
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
@@ -34,6 +41,11 @@ test-py36:
 test-py37:
   image: python:3.7
   stage: test
+  cache:
+    key: test-cache-37
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
@@ -43,6 +55,11 @@ test-py37:
 test-py38:
   image: python:3.8
   stage: test
+  cache:
+    key: test-cache-38
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
@@ -52,6 +69,11 @@ test-py38:
 test-py39:
   image: python:3.9
   stage: test
+  cache:
+    key: test-cache-39
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
@@ -61,6 +83,11 @@ test-py39:
 release-step:
   image: python:latest
   stage: release
+  cache:
+    key: release-cache
+    paths:
+      - .cache/pip
+      - venv/
   script:
     - "pip3 install --upgrade twine -i https://pypi.tuna.tsinghua.edu.cn/simple/"
     - "python3 -m twine upload dist/*"
