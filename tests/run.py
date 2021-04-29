@@ -11,6 +11,7 @@ def main():
     check_cmd("python3 %s" % os.path.join(path, "write.py"))
     check_cmd("python3 %s" % os.path.join(path, "read.py"))
     check_cmd("python3 %s" % os.path.join(path, "data_loader.py"))
+    check_cmd("python3 %s" % os.path.join(path, "http.py"))
 
 if __name__ == "__main__":
     main()

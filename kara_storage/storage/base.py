@@ -86,6 +86,9 @@ class KaraStorage:
             from .oss import OSSStorage
             path =  uri.path.split("/")
             self.__storage = OSSStorage(path[1], "http://" + uri.netloc,  "/".join(path[2:]), kwargs["app_key"], kwargs["app_secret"])
+        elif uri.scheme == "http" or uri.scheme == "https":
+            from .http import HTTPStorage
+            self.__storage = HTTPStorage( uri.scheme + "://" + uri.netloc + uri.path )
             
     
     def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:
