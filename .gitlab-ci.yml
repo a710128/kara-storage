@@ -5,7 +5,7 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PIP_MIRROR: "http://mirrors.aliyun.com/pypi/simple/"
+  PIP_MIRROR: "https://mirrors.aliyun.com/pypi/simple/"
 
 
 
