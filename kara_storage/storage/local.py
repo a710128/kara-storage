@@ -10,7 +10,7 @@ class LocalStorage:
             os.makedirs( self.base_dir )
     
     def open(self, namespace, key, mode, version, **kwargs) -> Dataset:
-        ds_base = os.path.join(self.base_dir, "d", namespace, key)
+        ds_base = os.path.join(self.base_dir, "row", namespace, key)
         if not os.path.exists(ds_base):
             if "w" not in mode:
                 raise ValueError("Dataset not exists")
@@ -39,7 +39,7 @@ class LocalStorage:
         return LocalDataset( os.path.join(ds_base, version), mode, **kwargs )
     
     def loadDirectory(self, namespace, key, local_path, version):
-        ds_base = os.path.join(self.base_dir, "o", namespace, key)
+        ds_base = os.path.join(self.base_dir, "obj", namespace, key)
         if not os.path.exists(ds_base):
             raise ValueError("Object storage not exists")
         
@@ -60,7 +60,7 @@ class LocalStorage:
         return version
     
     def saveDirectory(self, namespace, key, local_path, version):
-        ds_base = os.path.join(self.base_dir, "o", namespace, key)
+        ds_base = os.path.join(self.base_dir, "obj", namespace, key)
         if not os.path.exists(ds_base):
             os.makedirs(ds_base)
             json.dump({
