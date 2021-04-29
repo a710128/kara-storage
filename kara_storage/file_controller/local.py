@@ -114,10 +114,11 @@ class LocalFileController(FileController):
                 print(os.path.join( self.base_dir, "%d.blk" % trunk_id))
                 break
             f.seek( (offset + read_pos) % self.max_file_size, io.SEEK_SET )
-            v = f.read(length)
+            v = f.read(rest_length)
 
             read_pos += len(v)
             rest_length -= len(v)
             trunk_id += 1
             ret.write(v)
+            f.close()
         return ret.getvalue()
