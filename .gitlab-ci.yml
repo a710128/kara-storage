@@ -5,6 +5,7 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PIP_MIRROR: "http://mirrors.aliyun.com/pypi/simple/"
 
 
 
@@ -17,7 +18,7 @@ build-job:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade build wheel setuptools -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade build wheel setuptools -i $PIP_MIRROR"
     - 'python3 -m build'
   artifacts:
     paths:
@@ -33,8 +34,8 @@ test-py36:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
-    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
@@ -47,8 +48,8 @@ test-py37:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
-    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
@@ -61,8 +62,8 @@ test-py38:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
-    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
@@ -75,8 +76,8 @@ test-py39:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
-    - "pip3 install --upgrade -r requirements-dev.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run.py"
 
@@ -89,7 +90,7 @@ release-step:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade twine -i https://pypi.tuna.tsinghua.edu.cn/simple/"
+    - "pip3 install --upgrade twine -i $PIP_MIRROR"
     - "python3 -m twine upload dist/*"
   only:
     - tags
