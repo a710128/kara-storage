@@ -1,5 +1,5 @@
 from typing import Any
-from .base import Serializer
+from ..abc import Serializer
 import orjson
 
 class JSONSerializer(Serializer):

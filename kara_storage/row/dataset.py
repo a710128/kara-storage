@@ -1,21 +1,27 @@
-from ..file_controller import FileController
+from .trunk import TrunkController
+from ..abc import StorageBase, Dataset
 import struct
 import io
 
-class Dataset:
-    def __init__(self, index_controller : FileController, data_controller : FileController, mode : str, buffer_size = 128 * 1024) -> None:
+class RawDataset(Dataset):
+    def __init__(self, storage : StorageBase, prefix : str, mode : str, buffer_size : int = 128 * 1024 * 1024, **kwargs) -> None:
+        if not prefix.endswith("/"):
+            prefix = prefix + "/"
+
         self.__closed = True
         self.__mode = mode
         self.__writable = ("w" in mode)
         self.__readable = ("r" in mode)
-        self.__index_controller = index_controller
-        self.__data_controller = data_controller
+        self.__index_controller = TrunkController(storage, prefix + "index/" , mode=mode, **kwargs)
+        self.__data_controller = TrunkController(storage, prefix + "data/" , mode=mode, **kwargs)
+        
         if self.__readable:
-            self.__index_reader = io.BufferedReader(index_controller, buffer_size=buffer_size)
-            self.__data_reader = io.BufferedReader(data_controller, buffer_size=buffer_size)
+            self.__index_reader = io.BufferedReader(self.__index_controller, buffer_size=buffer_size)
+            self.__data_reader = io.BufferedReader(self.__data_controller, buffer_size=buffer_size)
         if self.__writable:
-            self.__index_writer = io.BufferedWriter(index_controller, buffer_size=buffer_size)
-            self.__data_writer = io.BufferedWriter(data_controller, buffer_size=buffer_size)
+            self.__index_writer = io.BufferedWriter(self.__index_controller, buffer_size=buffer_size)
+            self.__data_writer = io.BufferedWriter(self.__data_controller, buffer_size=buffer_size)
+        
         self.__closed = False
         self.__last_read_pos = 0
 
@@ -32,7 +38,6 @@ class Dataset:
     
     def close(self):
         if not self.__closed:
-            self.flush()
             if self.__readable:
                 self.__index_reader.close()
                 self.__data_reader.close()
@@ -65,13 +70,18 @@ class Dataset:
             raise RuntimeError("Dataset closed")
         if not self.__readable:
             raise RuntimeError("Dataset not readable in mode `%s`" % self.__mode)
-        
-        v = self.__index_reader.read(8)
-        if v is None or len(v) != 8:
+        if self.__tell == self.__size:
             return None
+        v = self.__index_reader.read(8)
+        if v is None:
+            return None
+        if len(v) != 8:
+            raise RuntimeError("Dataset is broken at index offset %d, got length %d" % (self.__tell * 8, len(v)))
         cur_read_pos = struct.unpack("Q", v)[0]
         length = cur_read_pos - self.__last_read_pos
         ret = self.__data_reader.read(length)
+        if len(ret) != length:
+            raise RuntimeError("Dataset is broken at data offset %d ~ %d" % (self.__last_read_pos, cur_read_pos))
         self.__last_read_pos = cur_read_pos
         self.__tell += 1
         return ret
@@ -81,6 +91,8 @@ class Dataset:
     def seek(self, offset : int, whence : int) -> int:
         if self.__closed:
             raise RuntimeError("Dataset closed")
+        if not self.__readable:
+            raise RuntimeError("Dataset not seekable in mode `%s`" % self.__mode)
 
         nw_pos = None
         if whence == io.SEEK_SET:
@@ -101,8 +113,10 @@ class Dataset:
         else:
             self.__index_reader.seek(0, io.SEEK_SET)
             self.__last_read_pos = 0
+
         self.__data_reader.seek(self.__last_read_pos, io.SEEK_SET)
         self.__tell = nw_pos
+
         return self.__tell
             
     def pread(self, offset : int) -> bytes:
@@ -110,16 +124,26 @@ class Dataset:
             raise RuntimeError("Dataset closed")
         if not self.__readable:
             raise RuntimeError("Dataset not readable in mode `%s`" % self.__mode)
+        if offset >= self.__size:
+            raise IndexError("Offset %d is out of range [0, %d)" % (offset ,self.__size))
 
         if offset > 0:
             bf = self.__index_controller.pread((offset - 1) * 8, 16)
+            if len(bf) != 16:
+                raise RuntimeError("Dataset is broken at index offset %d, go length %d" % ((offset - 1) * 8, len(bf)))
             last_pos = struct.unpack("Q", bf[:8])[0]
             curr_pos = struct.unpack("Q", bf[8:])[0]
         else:
             bf = self.__index_controller.pread(0, 8)
+            if len(bf) != 8:
+                raise RuntimeError("Dataset is broken at index offset %d" % 0)
             last_pos = 0
             curr_pos = struct.unpack("Q", bf)[0]
-        return self.__data_controller.pread( last_pos, curr_pos - last_pos )
+            
+        ret = self.__data_controller.pread( last_pos, curr_pos - last_pos )
+        if len(ret) != curr_pos - last_pos:
+            raise RuntimeError("Dataset is broken at data offset %d ~ %d" % (last_pos, curr_pos))
+        return ret
     
     def size(self) -> int:
         return self.__size

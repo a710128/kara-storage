@@ -1,4 +1,4 @@
-from .base import Serializer
+from ..abc import Serializer
 
 class NoSerializer(Serializer):
     def serialize(self, x : bytes) -> bytes:

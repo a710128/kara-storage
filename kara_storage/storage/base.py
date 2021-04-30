@@ -1,78 +1,15 @@
-
-from typing import Any, Generator, Union
+import io
+from kara_storage.abc.serializer import Serializer
+from typing import Any
 from urllib.parse import urlparse
-import threading
 import os
-from ..dataset import Dataset
-from ..serialization import Serializer, JSONSerializer
-
-class RowDataset:
-    def __init__(self, ds : Dataset, serializer : Serializer):
-        self.__ds = ds
-        self.__serializer = serializer
-        self.lock = threading.Lock()
-
-    @property
-    def closed(self):
-        return self.__ds.closed
-    
-    def close(self):
-        with self.lock:
-            return self.__ds.close()
-    
-    def flush(self):
-        with self.lock:
-            return self.__ds.flush()
-    
-    def write(self, data : Any):
-        with self.lock:
-            return self.__ds.write( self.__serializer.serialize(data) )
-    
-    def read(self) -> Union[Any, None]:
-        with self.lock:
-            v = self.__ds.read()
-            if v is None or len(v) == 0:
-                return None
-            return self.__serializer.deserialize( v )
-    
-    def seek(self, offset : int, whence : int = 0) -> int:
-        with self.lock:
-            return self.__ds.seek(offset, whence)
-    
-    def pread(self, offset : int) -> Union[Any, None]:
-        with self.lock:
-            v = self.__ds.pread(offset)
-            if len(v) == 0:
-                return None
-        return self.__serializer.deserialize( v )
-    
-    def size(self) -> int:
-        with self.lock:
-            return self.__ds.size()
-    
-    def tell(self) -> int:
-        with self.lock:
-            return self.__ds.tell()
-    
-    def __len__(self) -> int:
-        return self.size()
-    
-    def __iter__(self) -> Generator[Any, None, None]:
-        while True:
-            v = self.read()
-            if v is None:
-                break
-            yield v
-    
-    def __getitem__(self, key : int) -> Any:
-        if not isinstance(key, int):
-            raise TypeError("Dataset index must be int")
-        return self.pread(key)
-        
-
+import warnings
+import json
+from ..row import RowDataset
+from ..object import ObjectDataset
 
 class KaraStorage:
-    def __init__(self, url : str, **kwargs) -> None:
+    def __init__(self, url, **kwargs) -> None:
         uri = urlparse(url)
         if uri.scheme == "file":
             path = ""
@@ -80,28 +17,163 @@ class KaraStorage:
                 path = uri.path
             else:
                 path = os.path.abspath(uri.netloc) + uri.path
-            from .local import LocalStorage
-            self.__storage = LocalStorage(path, **kwargs)
+            from ..backend import LocalFileStorage
+            self.__prefix = path
+            self.__storage = LocalFileStorage()
         elif uri.scheme == "oss":
-            from .oss import OSSStorage
             path =  uri.path.split("/")
-            self.__storage = OSSStorage(path[1], "http://" + uri.netloc,  "/".join(path[2:]), kwargs["app_key"], kwargs["app_secret"])
+            from ..backend import OSSStorage
+            if "use_ssl" in kwargs and kwargs["use_ssl"]:
+                self.__storage = OSSStorage(path[1], "https://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            else:
+                self.__storage = OSSStorage(path[1], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
+            self.__prefix = "/".join(path[2:])    
         elif uri.scheme == "http" or uri.scheme == "https":
-            from .http import HTTPStorage
-            self.__storage = HTTPStorage( uri.scheme + "://" + uri.netloc + uri.path )
-            
+            from ..backend import HTTPStorage
+            headers = {}
+            if "headers" in kwargs:
+                headers = kwargs["headers"]
+            self.__storage = HTTPStorage( uri.scheme + "://" + uri.netloc, headers=headers)
+            self.__prefix = uri.path
+        else:
+            raise ValueError("Unknown scheme `%s`" % uri.scheme)
+        
+        self.__object_dataset = ObjectDataset(self.__storage)
+        
+        if not self.__prefix.endswith("/"):
+            self.__prefix = self.__prefix + "/"
+        
     
-    def open(self, namespace, key, mode="r", version="latest", serialization=None, **kwargs) -> RowDataset:
-        version = str(version)
-        if serialization is None:
-            serialization = JSONSerializer()
-        return RowDataset(self.__storage.open(namespace, key, mode, version, **kwargs), serialization)
+    
+    def get_meta(self, storage_type : str, namespace : str, key : str):
+        version_path = self.__prefix + "%s/%s/%s/meta.json" % (storage_type, namespace, key)
+        if self.__storage.filesize(version_path) is None:
+            raise FileNotFoundError("Dataset not exists")
 
-    def loadDirectory(self, namespace, key, local_path, version="latest"):
-        version = str(version)
-        return self.__storage.loadDirectory(namespace, key, local_path, version)
+        return json.loads(self.__storage.readfile(version_path).decode("utf-8"))
     
-    def saveDirectory(self, namespace, key, local_path, version=None):
-        if version is not None:
-            version = str(version)
-        return self.__storage.saveDirectory(namespace, key, local_path, version)
+    def get_row_meta(self, namespace : str, key : str):
+        return self.get_meta("row", namespace, key)
+    
+    def get_object_meta(self, namespace : str, key : str):
+        return self.get_meta("obj", namespace, key)
+    
+    def put_meta(self, storage_type : str, namespace : str, key : str, meta : Any):
+        version_path = self.__prefix + "%s/%s/%s/meta.json" % (storage_type, namespace, key)
+        self.__storage.put( version_path, json.dumps(meta).encode("utf-8") )
+    
+    def put_row_meta(self, namespace : str, key : str, meta : Any):
+        self.put_meta("row", namespace, key, meta)
+    
+    def put_object_meta(self, namespace : str, key : str, meta : Any):
+        self.put_meta("obj", namespace, key, meta)
+    
+    def open_dataset(self, 
+        namespace : str, key : str, mode : str = "r", version="latest", 
+        serialization : Serializer = None, **kwargs
+    ) -> RowDataset:
+
+        version = str(version)
+        try:
+            config = self.get_row_meta(namespace, key)
+        except FileNotFoundError:
+            if "w" not in mode:
+                raise ValueError("Dataset not exists")
+            config = {
+                "latest": None,
+                "versions": [],
+            }
+        
+        if version == "latest":
+            if config["latest"] is None:
+                raise ValueError("No available version found in dataset `%s`. Please specify a version if you want to create a new dataset" % key)
+            version = config["latest"]
+
+        if "w" in mode:
+            config["latest"] = version
+            if version not in config["versions"]:
+                config["versions"].append(version)
+            self.put_row_meta(namespace, key, config)
+            
+        if "r" in mode:
+            if version not in config["versions"]:
+                raise ValueError("Dataset version `%s` not found in dataset `%s`" % (version, key))
+        
+        return RowDataset(self.__storage, self.__prefix + "row/%s/%s/%s/" % (namespace, key, version), mode, serialization=serialization, **kwargs)
+
+    def open(self, *args, **kwargs) -> RowDataset:
+        warnings.warn(
+            "KaraStorage.open is deprecated, and will be removed in the future.\n" +
+            "Please use KaraStorage.open_dataset instead."
+        )
+        return self.open_dataset(*args, **kwargs)
+
+    def loadDirectory(self, namespace : str, key : str, local_path : str, version = "latest"):
+        version = str(version)
+        try:
+            config = self.get_object_meta(namespace, key)
+        except FileNotFoundError:
+            raise ValueError("Dataset not exists")
+        
+        if version == "latest":
+            if config["latest"] is None:
+                raise ValueError("No available version found in object storage `%s`." % key)
+            version = config["latest"]
+
+        if version not in config["versions"]:
+            raise ValueError("Object version `%s` not found in storage `%s`" % (version, key))
+        
+        version_info = json.loads(self.__storage.readfile(
+            self.__prefix + "obj/%s/%s/vers/%s.json" % (namespace, key, version)
+        ).decode("utf-8"))
+        self.__object_dataset.download(
+            self.__prefix + "obj/%s/%s/data/" % (namespace, key), 
+            version_info,
+            local_path
+        )
+        return version
+    
+    def saveDirectory(self, namespace : str, key : str, local_path : str, version = None) -> str:
+        version = str(version)
+        try:
+            config = self.get_object_meta(namespace, key)
+        except FileNotFoundError:
+            config = {
+                "latest": None,
+                "versions": []
+            }
+        if version is None:
+            # auto generate version
+            cnt = 0
+            while ("%d" % cnt) in config["versions"]:
+                cnt += 1
+            version = '%d' % cnt
+        
+        if version == "latest":
+            if config["latest"] is None:
+                raise ValueError("No available version found in object storage `%s`." % key)
+            version = config["latest"]
+        
+        config["latest"] = version
+        if version not in config["versions"]:
+            config["versions"].append(version)
+        self.put_object_meta(namespace, key, config)
+
+        version_info = self.__object_dataset.upload(
+            self.__prefix + "obj/%s/%s/data/" % (namespace, key),
+            local_path
+        )
+        self.__storage.put(
+            self.__prefix + "obj/%s/%s/vers/%s.json" % (namespace, key, version),
+            json.dumps( version_info ).encode("utf-8")
+        )
+        return version
+
+    
+
+    
+
+
+        
+
+
