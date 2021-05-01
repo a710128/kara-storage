@@ -45,28 +45,28 @@ class KaraStorage:
         
     
     
-    def get_meta(self, storage_type : str, namespace : str, key : str):
+    def __get_meta(self, storage_type : str, namespace : str, key : str):
         version_path = self.__prefix + "%s/%s/%s/meta.json" % (storage_type, namespace, key)
         if self.__storage.filesize(version_path) is None:
             raise FileNotFoundError("Dataset not exists")
 
         return json.loads(self.__storage.readfile(version_path).decode("utf-8"))
     
-    def get_row_meta(self, namespace : str, key : str):
-        return self.get_meta("row", namespace, key)
+    def __get_row_meta(self, namespace : str, key : str):
+        return self.__get_meta("row", namespace, key)
     
-    def get_object_meta(self, namespace : str, key : str):
-        return self.get_meta("obj", namespace, key)
+    def __get_object_meta(self, namespace : str, key : str):
+        return self.__get_meta("obj", namespace, key)
     
-    def put_meta(self, storage_type : str, namespace : str, key : str, meta : Any):
+    def __put_meta(self, storage_type : str, namespace : str, key : str, meta : Any):
         version_path = self.__prefix + "%s/%s/%s/meta.json" % (storage_type, namespace, key)
         self.__storage.put( version_path, json.dumps(meta).encode("utf-8") )
     
-    def put_row_meta(self, namespace : str, key : str, meta : Any):
-        self.put_meta("row", namespace, key, meta)
+    def __put_row_meta(self, namespace : str, key : str, meta : Any):
+        self.__put_meta("row", namespace, key, meta)
     
-    def put_object_meta(self, namespace : str, key : str, meta : Any):
-        self.put_meta("obj", namespace, key, meta)
+    def __put_object_meta(self, namespace : str, key : str, meta : Any):
+        self.__put_meta("obj", namespace, key, meta)
     
     def open_dataset(self, 
         namespace : str, key : str, mode : str = "r", version="latest", 
@@ -75,7 +75,7 @@ class KaraStorage:
 
         version = str(version)
         try:
-            config = self.get_row_meta(namespace, key)
+            config = self.__get_row_meta(namespace, key)
         except FileNotFoundError:
             if "w" not in mode:
                 raise ValueError("Dataset not exists")
@@ -93,7 +93,7 @@ class KaraStorage:
             config["latest"] = version
             if version not in config["versions"]:
                 config["versions"].append(version)
-            self.put_row_meta(namespace, key, config)
+            self.__put_row_meta(namespace, key, config)
             
         if "r" in mode:
             if version not in config["versions"]:
@@ -109,12 +109,13 @@ class KaraStorage:
         return self.open_dataset(*args, **kwargs)
 
     def loadDirectory(self, namespace : str, key : str, local_path : str, version = "latest"):
-        version = str(version)
+        
         try:
-            config = self.get_object_meta(namespace, key)
+            config = self.__get_object_meta(namespace, key)
         except FileNotFoundError:
             raise ValueError("Dataset not exists")
         
+        version = str(version)
         if version == "latest":
             if config["latest"] is None:
                 raise ValueError("No available version found in object storage `%s`." % key)
@@ -134,9 +135,9 @@ class KaraStorage:
         return version
     
     def saveDirectory(self, namespace : str, key : str, local_path : str, version = None) -> str:
-        version = str(version)
+        
         try:
-            config = self.get_object_meta(namespace, key)
+            config = self.__get_object_meta(namespace, key)
         except FileNotFoundError:
             config = {
                 "latest": None,
@@ -149,6 +150,7 @@ class KaraStorage:
                 cnt += 1
             version = '%d' % cnt
         
+        version = str(version)
         if version == "latest":
             if config["latest"] is None:
                 raise ValueError("No available version found in object storage `%s`." % key)
@@ -157,7 +159,7 @@ class KaraStorage:
         config["latest"] = version
         if version not in config["versions"]:
             config["versions"].append(version)
-        self.put_object_meta(namespace, key, config)
+        self.__put_object_meta(namespace, key, config)
 
         version_info = self.__object_dataset.upload(
             self.__prefix + "obj/%s/%s/data/" % (namespace, key),

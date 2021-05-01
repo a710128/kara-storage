@@ -75,6 +75,8 @@ class ObjectDataset:
         
         for thd in thds:
             thd.join()
+        
+        # TODO: remove unused files
 
     
     def __search_in_file(self, local_path, path : List[str]):
@@ -112,7 +114,7 @@ class ObjectDataset:
             
             if self.__storage.filesize(remote_path + info["file"]) is None:
                 # file not exists
-                self.__storage.put( open(info["local_path"], "rb") )
+                self.__storage.put( remote_path + info["file"] , open(info["local_path"], "rb") )
 
             
                 
@@ -165,6 +167,7 @@ class ObjectDataset:
         
         for thd in thds:
             thd.join()
+        return file_info
         
         
         

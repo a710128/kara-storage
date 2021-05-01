@@ -3,13 +3,14 @@ import kara_storage
 import unittest, random
 import torch.utils.data as data
 import shutil, os
+import tempfile
 
 TEST_CASE_SIZE = 117
 TEST_VERSIONS = [3, 1, 2, 4, 7, 6, False]
 storage = kara_storage.KaraStorage("file://kara_data")
 
 class TestLocalFileStorage(unittest.TestCase):
-    def test_1_write(self):
+    def test_01_write(self):
         if os.path.exists("kara_data"):
             shutil.rmtree("kara_data")
         ds = storage.open_dataset("test", "a/b/c", "w", version="any-version")
@@ -23,7 +24,7 @@ class TestLocalFileStorage(unittest.TestCase):
         ds.close()
 
 
-    def test_2_read_length_eof(self):
+    def test_02_read_length_eof(self):
         ds = storage.open_dataset("test", "a/b/c", "r")
         self.assertEqual(len(ds), TEST_CASE_SIZE)
         for i, it in enumerate(ds):
@@ -33,7 +34,7 @@ class TestLocalFileStorage(unittest.TestCase):
         with self.assertRaises(EOFError):
             ds.read()
         
-    def test_3_read_random(self):
+    def test_03_read_random(self):
         ds = storage.open_dataset("test", "a/b/c", "r")
         
         idx = [i for i in range(TEST_CASE_SIZE)]
@@ -48,7 +49,7 @@ class TestLocalFileStorage(unittest.TestCase):
         self.assertEqual(v["index"], 0)
         self.assertEqual(ds.tell(), 1)
     
-    def test_4_read_pytorch_shuffle(self):
+    def test_04_read_pytorch_shuffle(self):
         ds = storage.open_dataset("test", "a/b/c", "r")
 
         pytorch_ds = kara_storage.make_torch_dataset(ds, shuffle=True)
@@ -67,7 +68,7 @@ class TestLocalFileStorage(unittest.TestCase):
             ds.read()
         self.assertEqual(ds.tell(), ds.size())
         
-    def test_5_read_pytorch_shuffle_repeatable(self):
+    def test_05_read_pytorch_shuffle_repeatable(self):
         ds = storage.open_dataset("test", "a/b/c", "r")
 
         pytorch_ds = kara_storage.make_torch_dataset(ds, shuffle=True)
@@ -101,7 +102,7 @@ class TestLocalFileStorage(unittest.TestCase):
                 break
         self.assertFalse(all_same)
     
-    def test_6_read_seek(self):
+    def test_06_read_seek(self):
         ds = storage.open_dataset("test", "a/b/c", "r")
 
         length = len(ds)
@@ -134,7 +135,7 @@ class TestLocalFileStorage(unittest.TestCase):
                 self.assertEqual(v["index"], curr)
                 curr += 1
     
-    def test_7_read_slice(self):
+    def test_07_read_slice(self):
         v = storage.open_dataset("test", "a/b/c", "r")
 
         ds = v.slice(5)
@@ -152,7 +153,7 @@ class TestLocalFileStorage(unittest.TestCase):
             next(it)
         self.assertEqual(len(ds), 2)
 
-    def test_8_write_append(self):
+    def test_08_write_append(self):
         ds = storage.open_dataset("test", "a/b/c", "w", version="latest")
 
         self.assertEqual(len(ds), TEST_CASE_SIZE)
@@ -166,7 +167,7 @@ class TestLocalFileStorage(unittest.TestCase):
         self.assertEqual(ds.read()["prp"], "qrq")
         self.assertEqual( len(ds), TEST_CASE_SIZE + 1 )
 
-    def test_9_multi_version(self):
+    def test_09_multi_version(self):
         for ver in TEST_VERSIONS:
             ds = storage.open_dataset("test", "test_multi_version", "w", version=ver)
             ds.write(ver)
@@ -179,6 +180,39 @@ class TestLocalFileStorage(unittest.TestCase):
         
         ds = storage.open_dataset("test", "test_multi_version", "r")
         self.assertEqual(ds.read(), TEST_VERSIONS[-1])
+    
+    def test_10_save_directory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            t1 = os.path.join(tmpdir, "t1")
+            t2 = os.path.join(tmpdir, "t2")
+            t3 = os.path.join(tmpdir, "t3")
+            
+            # make version 0
+            os.makedirs(t1)
+            open( os.path.join(t1, "f1"), "w" ).write("v0/f1")
+            open( os.path.join(t1, "f2"), "w" ).write("v0/f2")
+            os.makedirs(os.path.join(t1, "d1"))
+            open( os.path.join(t1, "d1", "f3"), "w" ).write("v0/f3")
+            self.assertEqual(storage.saveDirectory("test", "a/b/c", t1), "0")
+            
+            # make version 1
+            open( os.path.join(t1, "d1", "f3"), "w" ).write("v1/f3")
+            open( os.path.join(t1, "f2"), "w" ).write("v1/f2")
+            self.assertEqual(storage.saveDirectory("test", "a/b/c", t1), "1")
+            
+            # load version latest
+            self.assertEqual(storage.loadDirectory("test", "a/b/c", t2), "1")
+            self.assertEqual(open(os.path.join(t2, "f1"), "r").read(), "v0/f1")
+            self.assertEqual(open(os.path.join(t2, "f2"), "r").read(), "v1/f2")
+            self.assertEqual(open(os.path.join(t2, "d1", "f3"), "r").read(), "v1/f3")
+            
+            # load version 0
+            self.assertEqual(storage.loadDirectory("test", "a/b/c", t3, version=0), "0")
+            self.assertEqual(open(os.path.join(t3, "f1"), "r").read(), "v0/f1")
+            self.assertEqual(open(os.path.join(t3, "f2"), "r").read(), "v0/f2")
+            self.assertEqual(open(os.path.join(t3, "d1", "f3"), "r").read(), "v0/f3")
+
+
 
 
         

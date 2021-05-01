@@ -37,7 +37,7 @@ test-py36:
     - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
     - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/run.py"
+    - "python3 tests/run_test.py"
 
 test-py37:
   image: python:3.7
@@ -51,7 +51,7 @@ test-py37:
     - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
     - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/run.py"
+    - "python3 tests/run_test.py"
 
 test-py38:
   image: python:3.8
@@ -65,7 +65,7 @@ test-py38:
     - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
     - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/run.py"
+    - "python3 tests/run_test.py"
 
 test-py39:
   image: python:3.9
@@ -79,7 +79,7 @@ test-py39:
     - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
     - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
     - 'pip3 install $(find dist -name "*.whl")'
-    - "python3 tests/run.py"
+    - "python3 tests/run_test.py"
 
 release-step:
   image: python:latest
