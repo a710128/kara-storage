@@ -76,7 +76,16 @@ class ObjectDataset:
         for thd in thds:
             thd.join()
         
-        # TODO: remove unused files
+        path_set = set()
+        for it in file_info:
+            str_path = "/".join(it["path"])
+            path_set.add(str_path)
+        
+        for fullname, relative_path in self.__search_in_file(local_path, []):
+            str_path = "/".join(relative_path)
+            if str_path not in path_set:
+                os.unlink(fullname)
+
 
     
     def __search_in_file(self, local_path, path : List[str]):

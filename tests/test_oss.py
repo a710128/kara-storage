@@ -1,7 +1,7 @@
-import io, json
+import json
 import kara_storage
 import unittest, random
-import shutil, os
+import os
 import torch.utils.data as data
 
 APP_KEY = None
@@ -151,3 +151,30 @@ class TestOSSFileStorage(unittest.TestCase):
         with self.assertRaises(StopIteration):
             next(it)
         self.assertEqual(len(ds), 2)
+
+    def test_8_load_directory(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir), "1")
+            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, version=0), "0")
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "d1", "d.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "e1", "f.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "a.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "b.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "c.txt") ) )
+            self.assertEqual( open(os.path.join( tmpdir, "d1", "d.txt" )).read(), "d1/d" )
+            self.assertEqual( open(os.path.join( tmpdir, "e1", "f.txt" )).read(), "e1/f" )
+            self.assertEqual( open(os.path.join( tmpdir, "a.txt" )).read(), "asdasd" )
+            self.assertEqual( open(os.path.join( tmpdir, "b.txt" )).read(), "asdasd" )
+            self.assertEqual( open(os.path.join( tmpdir, "c.txt" )).read(), "aaaabbb" )
+
+            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, version="1"), "1")
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "d1", "d.txt") ) )
+            self.assertFalse( os.path.exists( os.path.join(tmpdir, "e1", "f.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "a.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "b.txt") ) )
+            self.assertTrue( os.path.exists( os.path.join(tmpdir, "c.txt") ) )
+            self.assertEqual( open(os.path.join( tmpdir, "d1", "d.txt" )).read(), "d1/d" )
+            self.assertEqual( open(os.path.join( tmpdir, "a.txt" )).read(), "asdasd" )
+            self.assertEqual( open(os.path.join( tmpdir, "b.txt" )).read(), "aaaabbb" )
+            self.assertEqual( open(os.path.join( tmpdir, "c.txt" )).read(), "aaaabbb" )

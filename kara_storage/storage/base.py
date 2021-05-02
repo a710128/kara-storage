@@ -108,7 +108,7 @@ class KaraStorage:
         )
         return self.open_dataset(*args, **kwargs)
 
-    def loadDirectory(self, namespace : str, key : str, local_path : str, version = "latest"):
+    def load_directory(self, namespace : str, key : str, local_path : str, version = "latest"):
         
         try:
             config = self.__get_object_meta(namespace, key)
@@ -134,7 +134,7 @@ class KaraStorage:
         )
         return version
     
-    def saveDirectory(self, namespace : str, key : str, local_path : str, version = None) -> str:
+    def save_directory(self, namespace : str, key : str, local_path : str, version = None) -> str:
         
         try:
             config = self.__get_object_meta(namespace, key)
