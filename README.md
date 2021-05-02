@@ -40,6 +40,14 @@ __对象存储__ 是一种以文件为单位的 Key-Value 数据库，可以实�
 
 将源代码保存到本地后，输入一下命令即可安装。
 
+#### 1.3.1 PIP（推荐）
+```console
+$ pip install kara-storage
+```
+
+#### 1.3.2 clone安装
+将仓库克隆到本地，并在项目目录中执行以下命令即可完成安装。
+
 ```console
 $ python setup.py install
 ```
@@ -74,6 +82,15 @@ storage = kara_storage.KaraStorage("oss://OSS_ENDPOINT/YOUR_BUCKET_NAME", app_ke
 其中`OSS_ENDPOINT`表示oss的节点，例如`oss-cn-beijing.aliyuncs.com`。
 
 在使用阿里云上的数据库前，请确保你的APP KEY和APP SECRET有权限访问数据库。
+
+##### 打开HTTP数据库
+
+```python
+import kara_storage
+storage = kara_storage.KaraStorage("https://path-to-your-dataset/")
+```
+
+可以结合阿里云OSS实现简单的数据公开。
 
 
 ### 2.2 行存储
@@ -213,10 +230,10 @@ kara_storage.make_torch_dataset(dataset, shuffle=True)
 #### 2.3.1 从服务器加载对象
 
 ```python
-storage.loadDirectory("namespace", "object_name", "local_path", "version")
+storage.load_directory("namespace", "object_name", "local_path", "version")
 ```
 
-`loadDirectory`会返回一个字符串，表示当前加载的对象的版本。它主要包含4个参数：
+`load_d_irectory`会返回一个字符串，表示当前加载的对象的版本。它主要包含4个参数：
 
 * namespace: 命名空间
 * object_name: 要加载的对象名称
@@ -226,10 +243,10 @@ storage.loadDirectory("namespace", "object_name", "local_path", "version")
 #### 2.3.2 将本地对象上传到服务器
 
 ```python
-storage.saveDirectory("namespace", "object_name", "local_path", "version")
+storage.save_directory("namespace", "object_name", "local_path", "version")
 ```
 
-`saveDirectory`会返回一个字符串，表示当前保存的对象的版本。它主要包含4个参数：
+`save_directory`会返回一个字符串，表示当前保存的对象的版本。它主要包含4个参数：
 * namespace: 命名空间
 * object_name: 要加载的对象名称
 * local_path: 要加载到的本地路径
@@ -240,6 +257,13 @@ storage.saveDirectory("namespace", "object_name", "local_path", "version")
 欢迎大家测试、提issue！
 
 # 更新日志
+
+### 2.0.0
+
+* 添加了 HTTP/HTTPS 存储后端的支持
+* 完善了对象存储系统，实现了基于hash的数据压缩和文件续传
+* 添加了RowDataset的多线程支持
+* 重构了大部分代码
 
 ### 1.0.3
 
