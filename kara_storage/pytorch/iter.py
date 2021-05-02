@@ -1,23 +1,13 @@
-from ..storage import RowDataset
-from .base import KaraPytorchDatasetBase
+from ..row import RowDataset
+from ..abc import DatasetIterator
 
-class IterDatasetWrapper(KaraPytorchDatasetBase):
-    def __init__(self, dataset : RowDataset) -> None:
-        super().__init__()
-        self.__dataset = dataset
-        self.set_epoch(0)
+class SequentialIterator(DatasetIterator):
+    def __init__(self, ds : RowDataset, epoch: int):
+        self.__ds = ds
+        self.__ds.seek(0)
     
-    def set_epoch(self, epoch_num):
-        self.__dataset.seek(0, 0)
-
-    
-    def __iter__(self):
-        while True:
-            v = self.__dataset.read()
-            if v is None:
-                break
-            yield v
-        return
-    
-    def __len__(self):
-        return len(self.__dataset)
+    def next(self):
+        try:
+            return self.__ds.read()
+        except EOFError:
+            raise StopIteration()
