@@ -33,7 +33,7 @@ SDK提供流式读取服务和流式Shuffle服务，我们在大小为1011MB的�
 ### 1.2 对象存储
 __对象存储__ 是一种以文件为单位的 Key-Value 数据库，可以实现各种尺寸的文件的存储。在kara_storage中，对象存储用于保存目录，例如模型的训练结果等
 
-目前工具包提供了 `loadDirectory` 和 `saveDirectory` 两个接口的支持。
+目前工具包提供了 `load_directory` 和 `save_directory` 两个接口的支持。
 
 
 ### 1.3 安装方法
@@ -87,7 +87,7 @@ storage = kara_storage.KaraStorage("oss://OSS_ENDPOINT/YOUR_BUCKET_NAME", app_ke
 
 ```python
 import kara_storage
-storage = kara_storage.KaraStorage("https://path-to-your-dataset/")
+storage = kara_storage.KaraStorage("https://path-to-your-dataset/prefix")
 ```
 
 可以结合阿里云OSS实现简单的数据公开。

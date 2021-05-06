@@ -82,6 +82,7 @@ class KaraStorage:
             config = {
                 "latest": None,
                 "versions": [],
+                "api": 2,
             }
         
         if version == "latest":
@@ -108,7 +109,7 @@ class KaraStorage:
         )
         return self.open_dataset(*args, **kwargs)
 
-    def load_directory(self, namespace : str, key : str, local_path : str, version = "latest"):
+    def load_directory(self, namespace : str, key : str, local_path : str, version = "latest", progress_bar=True):
         
         try:
             config = self.__get_object_meta(namespace, key)
@@ -130,18 +131,20 @@ class KaraStorage:
         self.__object_dataset.download(
             self.__prefix + "obj/%s/%s/data/" % (namespace, key), 
             version_info,
-            local_path
+            local_path,
+            progress_bar=progress_bar
         )
         return version
     
-    def save_directory(self, namespace : str, key : str, local_path : str, version = None) -> str:
+    def save_directory(self, namespace : str, key : str, local_path : str, version = None, progress_bar=True) -> str:
         
         try:
             config = self.__get_object_meta(namespace, key)
         except FileNotFoundError:
             config = {
                 "latest": None,
-                "versions": []
+                "versions": [],
+                "api": 2
             }
         if version is None:
             # auto generate version
@@ -163,7 +166,8 @@ class KaraStorage:
 
         version_info = self.__object_dataset.upload(
             self.__prefix + "obj/%s/%s/data/" % (namespace, key),
-            local_path
+            local_path,
+            progress_bar=progress_bar
         )
         self.__storage.put(
             self.__prefix + "obj/%s/%s/vers/%s.json" % (namespace, key, version),

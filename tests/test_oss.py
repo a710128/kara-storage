@@ -155,8 +155,8 @@ class TestOSSFileStorage(unittest.TestCase):
     def test_8_load_directory(self):
         import tempfile
         with tempfile.TemporaryDirectory() as tmpdir:
-            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir), "1")
-            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, version=0), "0")
+            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, progress_bar=False), "1")
+            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, version=0, progress_bar=False), "0")
             self.assertTrue( os.path.exists( os.path.join(tmpdir, "d1", "d.txt") ) )
             self.assertTrue( os.path.exists( os.path.join(tmpdir, "e1", "f.txt") ) )
             self.assertTrue( os.path.exists( os.path.join(tmpdir, "a.txt") ) )
@@ -168,7 +168,7 @@ class TestOSSFileStorage(unittest.TestCase):
             self.assertEqual( open(os.path.join( tmpdir, "b.txt" )).read(), "asdasd" )
             self.assertEqual( open(os.path.join( tmpdir, "c.txt" )).read(), "aaaabbb" )
 
-            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, version="1"), "1")
+            self.assertEqual(storage.load_directory("test", "a/b/c", tmpdir, version="1", progress_bar=False), "1")
             self.assertTrue( os.path.exists( os.path.join(tmpdir, "d1", "d.txt") ) )
             self.assertFalse( os.path.exists( os.path.join(tmpdir, "e1", "f.txt") ) )
             self.assertTrue( os.path.exists( os.path.join(tmpdir, "a.txt") ) )

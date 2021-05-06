@@ -193,21 +193,21 @@ class TestLocalFileStorage(unittest.TestCase):
             open( os.path.join(t1, "f2"), "w" ).write("v0/f2")
             os.makedirs(os.path.join(t1, "d1"))
             open( os.path.join(t1, "d1", "f3"), "w" ).write("v0/f3")
-            self.assertEqual(storage.save_directory("test", "a/b/c", t1), "0")
+            self.assertEqual(storage.save_directory("test", "a/b/c", t1, progress_bar=False), "0")
             
             # make version 1
             open( os.path.join(t1, "d1", "f3"), "w" ).write("v1/f3")
             open( os.path.join(t1, "f2"), "w" ).write("v1/f2")
-            self.assertEqual(storage.save_directory("test", "a/b/c", t1), "1")
+            self.assertEqual(storage.save_directory("test", "a/b/c", t1, progress_bar=False), "1")
             
             # load version latest
-            self.assertEqual(storage.load_directory("test", "a/b/c", t2), "1")
+            self.assertEqual(storage.load_directory("test", "a/b/c", t2, progress_bar=False), "1")
             self.assertEqual(open(os.path.join(t2, "f1"), "r").read(), "v0/f1")
             self.assertEqual(open(os.path.join(t2, "f2"), "r").read(), "v1/f2")
             self.assertEqual(open(os.path.join(t2, "d1", "f3"), "r").read(), "v1/f3")
             
             # load version 0
-            self.assertEqual(storage.load_directory("test", "a/b/c", t3, version=0), "0")
+            self.assertEqual(storage.load_directory("test", "a/b/c", t3, version=0, progress_bar=False), "0")
             self.assertEqual(open(os.path.join(t3, "f1"), "r").read(), "v0/f1")
             self.assertEqual(open(os.path.join(t3, "f2"), "r").read(), "v0/f2")
             self.assertEqual(open(os.path.join(t3, "d1", "f3"), "r").read(), "v0/f3")
