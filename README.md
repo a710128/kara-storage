@@ -252,11 +252,47 @@ storage.save_directory("namespace", "object_name", "local_path", "version")
 * local_path: 要加载到的本地路径
 * version: 要加载的数据版本，默认为`None`，表示自动生成一个不重复的版本号
 
-## 3. 其它
+## 3. KARA Storage CLI
+
+为了方便大家的使用，我们还提供了命令行工具来进行简单的数据查看和上传下载。
+
+### 3.1 查看数据
+
+可以使用以下命令进行数据的可视化查看（目前仅支持json序列化）。
+```console
+$ kara_storage row <url> view <namespace> <key> [-v version] [--app-key app_key] [--app-secret app_secret] [--begin data_index]
+```
+
+__例如__
+
+```console
+$ kara_storage row https://kara-public.oss-cn-beijing.aliyuncs.com/test view test_ns mydb
+```
+
+### 3.2 上传文件
+
+```console
+$ kara_storage obj <url> save <namespace> <key> <local_path> [-v version] [--app-key app_key] [--app-secret app_secret]
+```
+该命令会将本地路径`local_path`上传，并设置版本号为`version`，默认会新建一个版本。
+
+### 3.3 文件下载
+
+```console
+$ kara_storage obj <url> load <namespace> <key> <local_path> [-v version] [--app-key app_key] [--app-secret app_secret]
+```
+该命令会将文件加载到`local_path`目录。
+
+## 4. 其它
 
 欢迎大家测试、提issue！
 
 # 更新日志
+
+### 2.0.1
+
+* 添加了文件上传和下载的进度条
+* 添加了CLI支持
 
 ### 2.0.0
 

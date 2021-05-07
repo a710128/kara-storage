@@ -28,6 +28,7 @@ def main():
         ],
         python_requires=">=3.6",
         setup_requires=["wheel"],
+        scripts=["scripts/kara_storage"],
         install_requires=get_requirements()
     )
 
