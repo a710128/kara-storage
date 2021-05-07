@@ -4,7 +4,7 @@ import struct
 import io
 
 class RawDataset(Dataset):
-    def __init__(self, storage : StorageBase, prefix : str, mode : str, buffer_size : int = 128 * 1024 * 1024, **kwargs) -> None:
+    def __init__(self, storage : StorageBase, prefix : str, mode : str, buffer_size : int = 1024 * 1024, **kwargs) -> None:
         if not prefix.endswith("/"):
             prefix = prefix + "/"
 
