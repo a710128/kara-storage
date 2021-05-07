@@ -292,6 +292,7 @@ $ kara_storage obj <url> load <namespace> <key> <local_path> [-v version] [--app
 ### 2.0.2
 
 * 修复了blessed依赖问题
+* CLI添加打印版本号
 
 ### 2.0.1
 
