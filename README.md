@@ -289,6 +289,10 @@ $ kara_storage obj <url> load <namespace> <key> <local_path> [-v version] [--app
 
 # 更新日志
 
+### 2.0.2
+
+* 修复了blessed依赖问题
+
 ### 2.0.1
 
 * 添加了文件上传和下载的进度条
