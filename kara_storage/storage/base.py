@@ -17,19 +17,19 @@ class KaraStorage:
                 path = uri.path
             else:
                 path = os.path.abspath(uri.netloc) + uri.path
-            from ..backend import LocalFileStorage
+            from ..backend.file import LocalFileStorage
             self.__prefix = path
             self.__storage = LocalFileStorage()
         elif uri.scheme == "oss":
             path =  uri.path.split("/")
-            from ..backend import OSSStorage
+            from ..backend.oss import OSSStorage
             if "use_ssl" in kwargs and kwargs["use_ssl"]:
                 self.__storage = OSSStorage(path[1], "https://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
             else:
                 self.__storage = OSSStorage(path[1], "http://" + uri.netloc, kwargs["app_key"], kwargs["app_secret"])
             self.__prefix = "/".join(path[2:])    
         elif uri.scheme == "http" or uri.scheme == "https":
-            from ..backend import HTTPStorage
+            from ..backend.http import HTTPStorage
             headers = {}
             if "headers" in kwargs:
                 headers = kwargs["headers"]
