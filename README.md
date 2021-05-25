@@ -289,6 +289,12 @@ $ kara_storage obj <url> load <namespace> <key> <local_path> [-v version] [--app
 
 # 更新日志
 
+### 2.0.3
+
+* 修复了 kara_storage 对 oss2 依赖的问题
+* 修复了在 load_directory 和 save_directory 时，使用 Ctrl+C 无法终止程序的问题
+
+
 ### 2.0.2
 
 * 修复了blessed依赖问题
