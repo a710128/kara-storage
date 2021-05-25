@@ -74,10 +74,10 @@ class ObjectDataset:
         
         q_bar = queue.Queue()
         thds = [
-            threading.Thread(target=self.__download_thread, args=(q_file, local_path, data_prefix, q_bar)) 
+            threading.Thread(target=self.__download_thread, args=(q_file, local_path, data_prefix, q_bar), daemon=True) 
                 for _ in range(self.num_workers)
         ]
-        thd_bar = threading.Thread(target=self.__progress_bar, args=(q_bar, progress_bar), kwargs={"total": total_file_size, "desc": "Downloading", "unit": "B", "unit_scale": True})
+        thd_bar = threading.Thread(target=self.__progress_bar, args=(q_bar, progress_bar), kwargs={"total": total_file_size, "desc": "Downloading", "unit": "B", "unit_scale": True}, daemon=True)
         thd_bar.start()
         for thd in thds:
             thd.start()
@@ -169,10 +169,10 @@ class ObjectDataset:
 
         # start hash thread
         thds = [
-            threading.Thread(target=self.__hash_thread, args=(q_in, q_out, q_bar)) 
+            threading.Thread(target=self.__hash_thread, args=(q_in, q_out, q_bar), daemon=True) 
                 for _ in range(self.num_workers)
         ]
-        thd_bar = threading.Thread(target=self.__progress_bar, args=(q_bar, progress_bar), kwargs={"total": cnt_files, "desc": "Hashing"})
+        thd_bar = threading.Thread(target=self.__progress_bar, args=(q_bar, progress_bar), kwargs={"total": cnt_files, "desc": "Hashing"}, daemon=True)
         thd_bar.start()
         for thd in thds:
             thd.start()
@@ -208,11 +208,11 @@ class ObjectDataset:
         
         # start upload threads
         thds = [
-            threading.Thread(target=self.__upload_thread, args=(q_in, data_prefix, q_bar)) 
+            threading.Thread(target=self.__upload_thread, args=(q_in, data_prefix, q_bar), daemon=True)
                 for _ in range(self.num_workers)
         ]
         
-        thd_bar = threading.Thread(target=self.__progress_bar, args=(q_bar, progress_bar), kwargs={"total": total_file_size, "desc": "Uploading", "unit": "B", "unit_scale": True})
+        thd_bar = threading.Thread(target=self.__progress_bar, args=(q_bar, progress_bar), kwargs={"total": total_file_size, "desc": "Uploading", "unit": "B", "unit_scale": True}, daemon=True)
         thd_bar.start()
         for thd in thds:
             thd.start()
