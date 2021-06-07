@@ -289,6 +289,14 @@ $ kara_storage obj <url> load <namespace> <key> <local_path> [-v version] [--app
 
 # 更新日志
 
+### 2.1.0
+
+* 添加了针对 Dataset 的 RPC 支持。
+
+### 2.0.4
+
+* 紧急修复了 Dataset 在写入一段时间后报错的问题
+
 ### 2.0.3
 
 * 修复了 kara_storage 对 oss2 依赖的问题

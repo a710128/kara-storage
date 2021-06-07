@@ -1,3 +1,5 @@
 orjson
 tqdm
 blessed
+grpcio
+protobuf

@@ -5,7 +5,7 @@ stages:
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PIP_MIRROR: "http://mirrors.cloud.aliyuncs.com/pypi/simple/"
+  PIP_INDEX_URL: "http://mirrors.cloud.aliyuncs.com/pypi/simple/"
   PIP_TRUSTED_HOST: "mirrors.cloud.aliyuncs.com"
 
 
@@ -19,8 +19,9 @@ build-job:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade build wheel setuptools -i $PIP_MIRROR"
-    - 'python3 -m build'
+    - "env"
+    - "pip3 install --upgrade build wheel setuptools"
+    - "python3 -m build"
   artifacts:
     paths:
     - dist
@@ -35,8 +36,8 @@ test-py36:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
-    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements.txt"
+    - "pip3 install --upgrade -r requirements-dev.txt"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run_test.py"
 
@@ -49,8 +50,8 @@ test-py37:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
-    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements.txt"
+    - "pip3 install --upgrade -r requirements-dev.txt"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run_test.py"
 
@@ -63,8 +64,8 @@ test-py38:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
-    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements.txt"
+    - "pip3 install --upgrade -r requirements-dev.txt"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run_test.py"
 
@@ -77,8 +78,8 @@ test-py39:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade -r requirements.txt -i $PIP_MIRROR"
-    - "pip3 install --upgrade -r requirements-dev.txt -i $PIP_MIRROR"
+    - "pip3 install --upgrade -r requirements.txt"
+    - "pip3 install --upgrade -r requirements-dev.txt"
     - 'pip3 install $(find dist -name "*.whl")'
     - "python3 tests/run_test.py"
 
@@ -91,7 +92,7 @@ release-step:
       - .cache/pip
       - venv/
   script:
-    - "pip3 install --upgrade twine -i $PIP_MIRROR"
+    - "pip3 install --upgrade twine"
     - "python3 -m twine upload dist/*"
   only:
     - tags

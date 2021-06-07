@@ -67,7 +67,7 @@ class RowDataset(Dataset):
         else:
             self.__length = self.__ds.size()
     
-    def __read_raw(self) -> Optional[bytes]:
+    def _read_raw(self) -> Optional[bytes]:
         if not self.__readable:
             raise RuntimeError("Dataset is not readable")
         if self.__ds.closed:
@@ -79,7 +79,7 @@ class RowDataset(Dataset):
             self.__tell += 1
             return self.__ds.read()
     
-    def __pread_raw(self, offset : int) -> Optional[bytes]:
+    def _pread_raw(self, offset : int) -> Optional[bytes]:
         if not self.__readable:
             raise RuntimeError("Dataset is not readable")
         if self.__ds.closed:
@@ -90,7 +90,7 @@ class RowDataset(Dataset):
         with self.__lock:
             return self.__ds.pread(offset + self.__begin)
     
-    def __write_raw(self, data : bytes):
+    def _write_raw(self, data : bytes):
         if not self.__writable:
             raise RuntimeError("Dataset is not writable")
         if self.__ds.closed:
@@ -114,10 +114,10 @@ class RowDataset(Dataset):
     
     def write(self, data : Any):
         byte_data = self.__serialization.serialize(data)
-        self.__write_raw(byte_data)
+        self._write_raw(byte_data)
     
     def read(self) -> Any:
-        byte_ret = self.__read_raw()
+        byte_ret = self._read_raw()
         if byte_ret is None:
             raise EOFError()
         return self.__serialization.deserialize(byte_ret)
@@ -144,7 +144,7 @@ class RowDataset(Dataset):
             return self.__ds.seek(ds_offset, io.SEEK_SET)
             
     def pread(self, offset : int) -> Any:
-        byte_ret = self.__pread_raw(offset)
+        byte_ret = self._pread_raw(offset)
         if byte_ret is None:
             raise EOFError()
         return self.__serialization.deserialize(byte_ret)
@@ -188,12 +188,12 @@ class RowDataset(Dataset):
                         self.flush()
                         pipe.send({"code": 0})
                     elif cmd["op"] == "write":
-                        self.__write_raw(cmd["data"])
+                        self._write_raw(cmd["data"])
                         pipe.send({"code": 0})
                     elif cmd["op"] == "read":
                         pipe.send({
                             "code": 0,
-                            "data": self.__read_raw()
+                            "data": self._read_raw()
                         })
                     elif cmd["op"] == "seek":
                         pipe.send({
@@ -203,7 +203,7 @@ class RowDataset(Dataset):
                     elif cmd["op"] == "pread":
                         pipe.send({
                             "code": 0,
-                            "data": self.__pread_raw(cmd["data"])
+                            "data": self._pread_raw(cmd["data"])
                         })
                     elif cmd["op"] == "size":
                         pipe.send({
