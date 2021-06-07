@@ -1,5 +1,2 @@
 torch
-orjson
 oss2
-tqdm
-blessed
