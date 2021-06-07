@@ -6,7 +6,7 @@ import multiprocessing as mp
 from kara_storage.rpc import KaraStorageServer, KaraStorageClient
 
 TEST_CASE_SIZE = 117
-ADDRESS = "[::]:3080"
+ADDRESS = "127.0.0.1:3080"
 
 def start_rpc_server(evt):
     server = KaraStorageServer("file://kara_data")
