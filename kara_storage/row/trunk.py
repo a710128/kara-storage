@@ -108,7 +108,7 @@ class TrunkController(io.RawIOBase):
 
         if self.__infile_offset == self.__max_file_size:
             self.__fp_write.close()
-            self.__fp_write = open( self.__prefix + "%d.blk" % self.__num_trunks, "a")
+            self.__fp_write = self.__storage.open( self.__prefix + "%d.blk" % self.__num_trunks, "a")
             self.__num_trunks += 1
             self.__infile_offset = 0
         return wrt_len
