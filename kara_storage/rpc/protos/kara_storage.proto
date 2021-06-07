@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message KaraRequest {
+    int32 op = 1;
+    bytes data = 2;
+    string fname = 3;
+}
+
+message KaraResponse {
+    int32 code = 1;
+    bytes data = 2;
+}
+
+service KaraGateway {
+    rpc StreamDataset(stream KaraRequest) returns ( stream KaraResponse );
+    rpc StreamObject (stream KaraRequest) returns ( stream KaraResponse );
+    rpc GetMeta(KaraRequest) returns ( KaraResponse );
+    rpc PutMeta(KaraRequest) returns ( KaraResponse );
+}

@@ -1,14 +1,14 @@
-import io
 from kara_storage.abc.serializer import Serializer
 from typing import Any
 from urllib.parse import urlparse
 import os
-import warnings
 import json
 from ..row import RowDataset
 from ..object import ObjectDataset
+from ..abc import StorageBase, KaraStorageBase
 
-class KaraStorage:
+
+class KaraStorage(KaraStorageBase):
     def __init__(self, url, **kwargs) -> None:
         uri = urlparse(url)
         if uri.scheme == "file":
@@ -42,8 +42,14 @@ class KaraStorage:
         
         if not self.__prefix.endswith("/"):
             self.__prefix = self.__prefix + "/"
-        
     
+    @property
+    def prefix(self) -> str:
+        return self.__prefix
+        
+    @property
+    def _storage(self) -> StorageBase:
+        return self.__storage
     
     def __get_meta(self, storage_type : str, namespace : str, key : str):
         version_path = self.__prefix + "%s/%s/%s/meta.json" % (storage_type, namespace, key)
@@ -52,20 +58,20 @@ class KaraStorage:
 
         return json.loads(self.__storage.readfile(version_path).decode("utf-8"))
     
-    def __get_row_meta(self, namespace : str, key : str):
+    def get_row_meta(self, namespace : str, key : str):
         return self.__get_meta("row", namespace, key)
     
-    def __get_object_meta(self, namespace : str, key : str):
+    def get_object_meta(self, namespace : str, key : str):
         return self.__get_meta("obj", namespace, key)
     
     def __put_meta(self, storage_type : str, namespace : str, key : str, meta : Any):
         version_path = self.__prefix + "%s/%s/%s/meta.json" % (storage_type, namespace, key)
         self.__storage.put( version_path, json.dumps(meta).encode("utf-8") )
     
-    def __put_row_meta(self, namespace : str, key : str, meta : Any):
+    def put_row_meta(self, namespace : str, key : str, meta : Any):
         self.__put_meta("row", namespace, key, meta)
     
-    def __put_object_meta(self, namespace : str, key : str, meta : Any):
+    def put_object_meta(self, namespace : str, key : str, meta : Any):
         self.__put_meta("obj", namespace, key, meta)
     
     def open_dataset(self, 
@@ -75,7 +81,7 @@ class KaraStorage:
 
         version = str(version)
         try:
-            config = self.__get_row_meta(namespace, key)
+            config = self.get_row_meta(namespace, key)
         except FileNotFoundError:
             if "w" not in mode:
                 raise ValueError("Dataset not exists")
@@ -94,7 +100,7 @@ class KaraStorage:
             config["latest"] = version
             if version not in config["versions"]:
                 config["versions"].append(version)
-            self.__put_row_meta(namespace, key, config)
+            self.put_row_meta(namespace, key, config)
             
         if "r" in mode:
             if version not in config["versions"]:
@@ -102,17 +108,10 @@ class KaraStorage:
         
         return RowDataset(self.__storage, self.__prefix + "row/%s/%s/%s/" % (namespace, key, version), mode, serialization=serialization, **kwargs)
 
-    def open(self, *args, **kwargs) -> RowDataset:
-        warnings.warn(
-            "KaraStorage.open is deprecated, and will be removed in the future.\n" +
-            "Please use KaraStorage.open_dataset instead."
-        )
-        return self.open_dataset(*args, **kwargs)
-
     def load_directory(self, namespace : str, key : str, local_path : str, version = "latest", progress_bar=True):
         
         try:
-            config = self.__get_object_meta(namespace, key)
+            config = self.get_object_meta(namespace, key)
         except FileNotFoundError:
             raise ValueError("Dataset not exists")
         
@@ -139,7 +138,7 @@ class KaraStorage:
     def save_directory(self, namespace : str, key : str, local_path : str, version = None, progress_bar=True) -> str:
         
         try:
-            config = self.__get_object_meta(namespace, key)
+            config = self.get_object_meta(namespace, key)
         except FileNotFoundError:
             config = {
                 "latest": None,
@@ -162,7 +161,7 @@ class KaraStorage:
         config["latest"] = version
         if version not in config["versions"]:
             config["versions"].append(version)
-        self.__put_object_meta(namespace, key, config)
+        self.put_object_meta(namespace, key, config)
 
         version_info = self.__object_dataset.upload(
             self.__prefix + "obj/%s/%s/data/" % (namespace, key),
