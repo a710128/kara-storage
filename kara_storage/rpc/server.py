@@ -52,12 +52,18 @@ class KaraService(kara_storage_pb2_grpc.KaraGatewayServicer):
                     dataset.write(request.data)
                     yield kara_storage_pb2.KaraResponse(code=0, data= b"ok" )
                 elif request.op == KARA_OP_READ_DS:
-                    yield kara_storage_pb2.KaraResponse(code=0, data=dataset.read())
+                    try:
+                        yield kara_storage_pb2.KaraResponse(code=0, data=dataset.read())
+                    except EOFError:
+                        yield kara_storage_pb2.KaraResponse(code=2)
                 elif request.op == KARA_OP_SEEK_DS:
                     req = json.loads( request.data.decode("utf-8") )
                     yield kara_storage_pb2.KaraResponse(code=0, data=json.dumps(dataset.seek(req["offset"], req["whence"])).encode("utf-8"))
                 elif request.op == KARA_OP_PREAD_DS:
-                    req = json.loads( request.data.decode("utf-8") )
+                    try:
+                        req = json.loads( request.data.decode("utf-8") )
+                    except EOFError:
+                        yield kara_storage_pb2.KaraResponse(code=2)
                     yield kara_storage_pb2.KaraResponse(code=0, data=dataset.pread( req["offset"] ))
                 elif request.op == KARA_OP_SIZE_DS:
                     yield kara_storage_pb2.KaraResponse(code=0, data=json.dumps(dataset.size()).encode("utf-8"))

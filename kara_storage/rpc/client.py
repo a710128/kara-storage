@@ -46,6 +46,8 @@ class KaraStorageClientDataset(Dataset):
                 raise RuntimeError(ret.data.decode("utf-8"))
             elif ret.code == 0:
                 return ret.data
+            elif ret.code == 2:
+                raise EOFError()
             else:
                 raise RuntimeError("Unknown ret code %d" % ret.code)
 
