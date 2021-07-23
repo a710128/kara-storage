@@ -21,7 +21,7 @@ build-job:
   script:
     - "env"
     - "pip3 install --upgrade build wheel setuptools"
-    - "python3 -m build"
+    - "python3 setup.py bdist_wheel"
   artifacts:
     paths:
     - dist
