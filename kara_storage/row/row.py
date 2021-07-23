@@ -58,6 +58,8 @@ class RowDataset(Dataset):
                 length = self.__ds.size() - start
             
             self.__begin = start
+            if self.__begin > self.__ds.size():
+                self.__begin = self.__ds.size()
             self.__end = start + length
             if self.__end > self.__ds.size():
                 self.__end = self.__ds.size()
@@ -294,11 +296,15 @@ class RowDataset(Dataset):
         if length is None:
             length = self.__length - start
         
+        
         with self.__lock:
             self.__begin += start
-            self.__end = self.__begin + length
+            if self.__begin > self.__ds.size():
+                self.__begin = self.__ds.size()
 
-            assert self.__end <= self.__ds.size()
+            self.__end = self.__begin + length
+            if self.__end > self.__ds.size():
+                self.__end = self.__ds.size()
 
             self.__length = self.__end - self.__begin
             self.__tell = 0

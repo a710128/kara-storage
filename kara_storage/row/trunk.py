@@ -91,7 +91,7 @@ class TrunkController(io.RawIOBase):
         else:
             if lw == 0:
                 # __infile_offset < __file_size[__curr_file] but got EOF
-                raise RuntimeError("Faile size not aligned: expected %d more bytes" % (self.__file_sizes[self.__curr_file] - self.__infile_offset))
+                raise RuntimeError("File size not aligned: expected %d more bytes" % (self.__file_sizes[self.__curr_file] - self.__infile_offset))
         return lw
     
     def write(self, __b : bytes) -> Optional[int]:
@@ -148,6 +148,7 @@ class TrunkController(io.RawIOBase):
             self.__fp_read = io.BytesIO()
         else:
             self.__fp_read = self.__storage.open(self.__prefix + "%d.blk" % self.__curr_file, "r", begin=rest_size)
+        self.__infile_offset = rest_size
         self.__tell = nw_pos
 
         return self.__tell
