@@ -1,4 +1,4 @@
-from typing import Dict, Generator, Any, Type
+from typing import Dict, Generator, Any, Iterator, Type
 import torch.utils.data as data
 from ..row import RowDataset
 from ..abc import DatasetIterator
@@ -82,7 +82,7 @@ class KaraPytorchDatasetBase(data.IterableDataset):
         with self.__lock:
             return self.__iter.next()
 
-    def __iter__(self) -> Generator[Any, None, None]:
+    def __iter__(self) -> Iterator[Any]:
         while True:
             try:
                 v = self.__read_next()
