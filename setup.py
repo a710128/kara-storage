@@ -1,26 +1,6 @@
 import os
 import setuptools
-from pathlib import Path
-
-def get_requirements():
-    ret = []
-    with open(Path(__file__).parent.parent.joinpath("requirements.txt")) as freq:
-        for line in freq.readlines():
-            ret.append( line.strip() )
-    return ret
-    
-def get_readme():
-    ret = ""
-    with open(Path(__file__).parent.parent.joinpath("README.md")) as frd:
-        ret = frd.read()
-    return ret
-
-def get_version():
-    if "CI_COMMIT_TAG" in os.environ:
-        return os.environ["CI_COMMIT_TAG"]
-    if "CI_COMMIT_SHA" in os.environ:
-        return os.environ["CI_COMMIT_SHA"]
-    return "test"
+from tools import get_requirements, get_readme, get_version
 
 path = os.path.dirname(os.path.abspath(__file__))
 
