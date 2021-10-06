@@ -289,6 +289,10 @@ $ kara_storage obj <url> load <namespace> <key> <local_path> [-v version] [--app
 
 # 更新日志
 
+### 2.1.2
+
+* 添加了自动重试机制（解决OSS掉线问题）
+
 ### 2.1.1
 
 * 修复由trunk controller 导致 seek 后读取出错的问题

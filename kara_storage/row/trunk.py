@@ -64,7 +64,7 @@ class TrunkController(io.RawIOBase):
     def seekable(self) -> bool:
         return self.__readable
 
-    def readinto(self, __buffer) -> Optional[int]:
+    def readinto(self, __buffer, max_retry=3) -> Optional[int]:
         if not self.__readable:
             raise RuntimeError("Dataset not readable")
         if self.__closed:
@@ -91,7 +91,14 @@ class TrunkController(io.RawIOBase):
         else:
             if lw == 0:
                 # __infile_offset < __file_size[__curr_file] but got EOF
-                raise RuntimeError("File size not aligned: expected %d more bytes" % (self.__file_sizes[self.__curr_file] - self.__infile_offset))
+                # retry if connection timeout
+                if max_retry > 0:
+                    # reopen connection
+                    self.__fp_read = self.__storage.open(self.__prefix + "%d.blk" % self.__curr_file, "r", begin=self.__infile_offset)
+                    # retry
+                    return self.readinto(__buffer, max_retry-1)
+                else:
+                    raise RuntimeError("File size not aligned: expected %d more bytes" % (self.__file_sizes[self.__curr_file] - self.__infile_offset))
         return lw
     
     def write(self, __b : bytes) -> Optional[int]:
