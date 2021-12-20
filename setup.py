@@ -2,15 +2,13 @@ import os
 import setuptools
 from tools import get_requirements, get_readme, get_version
 
-path = os.path.dirname(os.path.abspath(__file__))
-
-version = get_version()
-
-open( os.path.join(path, "kara_storage", "version.py"), "w" ).write('version = "%s"' % version)
-
-
 
 def main():
+    path = os.path.dirname(os.path.abspath(__file__))
+
+    version = get_version()
+
+    open( os.path.join(path, "kara_storage", "version.py"), "w" ).write('version = "%s"' % version)
     setuptools.setup(
         name="kara_storage",
         version=version,
