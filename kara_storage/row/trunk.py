@@ -96,7 +96,7 @@ class TrunkController(io.RawIOBase):
                     # reopen connection
                     self.__fp_read = self.__storage.open(self.__prefix + "%d.blk" % self.__curr_file, "r", begin=self.__infile_offset)
                     # retry
-                    return self.readinto(__buffer, max_retry-1)
+                    return self.readinto(__buffer, max_retry - 1)
                 else:
                     raise RuntimeError("File size not aligned: expected %d more bytes" % (self.__file_sizes[self.__curr_file] - self.__infile_offset))
         return lw

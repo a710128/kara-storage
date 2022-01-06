@@ -12,9 +12,16 @@ class OSSReadableFile(OSSFile):
         self.__fp = fp
 
     def readinto(self, __buffer):
-        v = self.__fp.read(len(__buffer))
-        __buffer[:len(v)] = v
-        return len(v)
+        try:
+            v = self.__fp.read(len(__buffer))
+            __buffer[:len(v)] = v
+            return len(v)
+        except KeyboardInterrupt as e:
+            raise e
+        except InterruptedError as e:
+            raise e
+        except Exception:
+            return 0
         
     def flush(self):
         return
