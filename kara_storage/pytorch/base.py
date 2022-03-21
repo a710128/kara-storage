@@ -92,7 +92,7 @@ class KaraPytorchDatasetBase(data.IterableDataset):
                 yield v
     
     def __len__(self) -> int:
-        raise len(self.__ds)
+        return len(self.__ds)
     
     def __ipc_main(self):
         import select
